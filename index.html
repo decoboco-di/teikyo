@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>提供画像メーカー（Palmu）</title>
+<style>
+  :root{
+    --bg:#f4f1f8; --panel:#ffffff; --panel2:#faf8fd; --field:#ffffff;
+    --line:#ddd6e6; --ink:#2b2436; --sub:#6d6280;
+    --accent:#7b4fd6; --accentInk:#ffffff; --tint:#f0e9ff;
+    --danger:#c0392b; --dangerBg:#fdecea; --dangerLine:#f0c4be;
+    --stage:#e9e4f1; --check:#e2e2e2; --checkBg:#ffffff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#1b1723; --panel:#231e2e; --panel2:#2a2436; --field:#1f1a29;
+      --line:#3a3348; --ink:#ece8f4; --sub:#a79cbd;
+      --accent:#a688f0; --accentInk:#1b1723; --tint:#332a48;
+      --danger:#ff8a7a; --dangerBg:#3a2320; --dangerLine:#5a3630;
+      --stage:#15121c; --check:#2a2536; --checkBg:#3a3448;
+    }
+  }
+  :root[data-theme="dark"]{
+      --bg:#1b1723; --panel:#231e2e; --panel2:#2a2436; --field:#1f1a29;
+      --line:#3a3348; --ink:#ece8f4; --sub:#a79cbd;
+      --accent:#a688f0; --accentInk:#1b1723; --tint:#332a48;
+      --danger:#ff8a7a; --dangerBg:#3a2320; --dangerLine:#5a3630;
+      --stage:#15121c; --check:#2a2536; --checkBg:#3a3448;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:13px/1.55 "Yu Gothic UI","Meiryo",system-ui,sans-serif;overflow:hidden}
+  #app{display:flex;height:100vh}
+
+  #side{width:540px;min-width:340px;flex:0 0 auto;background:var(--panel);
+    border-right:1px solid var(--line);display:flex;flex-direction:column}
+  #sideScroll{overflow-y:auto;padding:14px 16px 60px;flex:1}
+  #grip{width:6px;cursor:col-resize;flex:0 0 auto;margin-left:-3px;z-index:5}
+  #grip:hover{background:var(--accent)}
+
+  h1{font-size:15px;margin:0}
+  h1 small{font-weight:400;color:var(--sub);font-size:11px;margin-left:6px}
+  section{border:1px solid var(--line);border-radius:10px;margin:12px 0;background:var(--panel)}
+  section>header{padding:8px 12px;font-weight:700;cursor:pointer;user-select:none;
+    display:flex;align-items:center;gap:6px;background:var(--panel2);border-radius:10px 10px 0 0}
+  section>header::before{content:"▼";font-size:9px;color:var(--sub)}
+  section.closed>header::before{content:"▶"}
+  section.closed>header{border-radius:10px}
+  section.closed>.body{display:none}
+  section>.body{padding:10px 12px 14px;border-top:1px solid var(--line)}
+
+  label{display:block;font-size:11px;color:var(--sub);margin-bottom:2px}
+  label.inline{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink)}
+  label.inline input{width:auto}
+  input[type=text],input[type=number],select{width:100%;padding:5px 7px;border:1px solid var(--line);
+    border-radius:6px;font:inherit;background:var(--field);color:inherit}
+  input.bad{border-color:var(--danger);background:var(--dangerBg)}
+  input[type=color]{width:100%;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--field)}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1;min-width:0}
+  .g2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .g6{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:var(--panel);
+    border-radius:7px;cursor:pointer;color:var(--ink)}
+  button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  button:disabled{opacity:.4;cursor:default}
+  button.primary{background:var(--accent);border-color:var(--accent);color:var(--accentInk);font-weight:700}
+  button.primary:hover{filter:brightness(1.1);color:var(--accentInk)}
+  button.mini{padding:2px 7px;font-size:11px}
+  button.del{color:var(--danger);border-color:var(--dangerLine)}
+  button.del:hover{background:var(--dangerBg);border-color:var(--danger);color:var(--danger)}
+  .hint{font-size:11px;color:var(--sub);margin:8px 0 0}
+  :is(button,input,select,summary):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  #items{display:flex;flex-direction:column;gap:8px}
+  .item{border:1px solid var(--line);border-radius:9px;padding:8px;display:grid;
+    grid-template-columns:20px 58px 1fr 74px;gap:8px;align-items:start}
+  .item.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(123,79,214,.15)}
+  .item.off{opacity:.45}
+  .item .on{padding-top:20px}
+  .item .on input{width:16px;height:16px}
+  .thumb{width:58px;height:58px;border-radius:50%;border:2px dashed var(--line);
+    background:var(--panel2) center/cover no-repeat;cursor:pointer;display:grid;place-items:center;
+    font-size:10px;color:var(--sub);overflow:hidden}
+  .thumb.has{border-style:solid}
+  .thumb.drop{border-color:var(--accent);background-color:var(--tint)}
+  .item .fields{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .item .ctl{display:flex;flex-direction:column;gap:4px}
+  .tag{font-size:10px;color:var(--accentInk);background:var(--accent);border-radius:4px;padding:1px 5px;text-align:center}
+  #dropAll{border:2px dashed var(--line);border-radius:9px;padding:10px;text-align:center;
+    color:var(--sub);font-size:11px;margin-bottom:8px}
+  #dropAll.drop{border-color:var(--accent);background:var(--tint);color:var(--accent)}
+
+  .tier{border:1px solid var(--line);border-radius:9px;padding:9px;margin-bottom:8px;background:var(--panel2)}
+  .tier .ttl{display:flex;align-items:center;justify-content:space-between;font-size:11px;
+    color:var(--sub);margin-bottom:6px}
+  .tier .sw{font-size:10px}
+  .tier .cnt{margin-left:auto;margin-right:8px;font-size:10px;color:#fff;
+    background:var(--accent);color:var(--accentInk);border-radius:9px;padding:1px 7px}
+  .adv{margin-top:6px}
+  .adv>summary{font-size:11px;color:var(--sub);cursor:pointer;user-select:none}
+
+  #main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--stage)}
+  #banner{display:none;padding:8px 14px;background:var(--dangerBg);color:var(--danger);
+    border-bottom:1px solid var(--dangerLine);font-size:12px;font-weight:700}
+  #banner.on{display:block}
+  #bar{padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  #bar .sp{flex:1}
+  #stage{flex:1;overflow:auto;display:grid;place-items:center;padding:20px}
+  #wrap{position:relative;box-shadow:0 6px 30px rgba(0,0,0,.18);
+    background-image:linear-gradient(45deg,var(--check) 25%,transparent 25%,transparent 75%,var(--check) 75%),
+      linear-gradient(45deg,var(--check) 25%,transparent 25%,transparent 75%,var(--check) 75%),
+      linear-gradient(var(--checkBg),var(--checkBg));
+    background-size:20px 20px,20px 20px,100% 100%;background-position:0 0,10px 10px,0 0}
+  #cv{display:block;touch-action:none}
+  #cv.grab{cursor:grab} #cv.grabbing{cursor:grabbing}
+  #warn{font-size:11px;color:var(--danger);font-weight:700;max-width:340px;line-height:1.35}
+  #status{font-size:11px;color:var(--sub);display:flex;align-items:center;gap:6px}
+
+  /* 書き出しパネル */
+  #modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;
+    z-index:100;padding:16px}
+  #modal[hidden]{display:none!important}
+  #modal .sheet{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px;width:min(560px,100%);max-height:100%;overflow:auto;
+    display:flex;flex-direction:column;gap:10px}
+  #modal .mhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  #modal .mhead b{font-size:14px}
+  #modal img{max-width:100%;height:auto;display:block;border:1px solid var(--line);
+    border-radius:8px;background:var(--checkBg)}
+  #modal textarea{width:100%;min-height:180px;resize:vertical;
+    font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;
+    border:1px solid var(--line);border-radius:8px;padding:8px;
+    background:var(--field);color:var(--ink)}
+  #modal .mact{display:flex;gap:8px}
+
+  /* スマホ・タブレット：横並び2ペインをやめてタブで切り替える */
+  #tabs{display:none;flex:0 0 auto}
+  @media (max-width:860px){
+    #app{flex-direction:column}
+    #grip{display:none}
+    #tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--line)}
+    #tabs button{flex:1;border:0;border-bottom:2px solid transparent;border-radius:0;
+      padding:11px 8px;font-weight:700;color:var(--sub);background:var(--panel)}
+    #tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+    #side{width:100%!important;min-width:0;border-right:0;flex:1;min-height:0}
+    #main{flex:1;min-height:0}
+    body.pane-preview #side{display:none}
+    body.pane-edit #main{display:none}
+    /* iOSは16px未満の入力欄で勝手に拡大するので大きくする */
+    input[type=text],input[type=number],select{font-size:16px;padding:7px}
+    .item{grid-template-columns:22px 54px 1fr;gap:7px}
+    .item .on{padding-top:16px}
+    .item .ctl{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
+    .item .ctl>*{flex:0 0 auto}
+    .item .g3{grid-template-columns:1fr 1fr}
+    .g4{grid-template-columns:1fr 1fr}
+    .g6{grid-template-columns:repeat(3,1fr)}
+    #bar{padding:6px 10px;gap:6px}
+    #bar button{padding:8px 12px}
+    #stage{padding:10px}
+    #sideScroll{padding:12px 12px 80px}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="tabs">
+    <button type="button" data-pane="edit" class="on">編集</button>
+    <button type="button" data-pane="preview">プレビュー</button>
+  </div>
+  <div id="side"><div id="sideScroll">
+
+    <h1>提供画像メーカー <small>Palmu / 背景01レイヤー生成</small></h1>
+
+    <section id="secBg"><header>1. 背景（ベース画像）</header><div class="body">
+      <label>背景画像を読み込む</label>
+      <input type="file" id="bgFile" accept="image/*">
+      <div class="row" style="margin-top:8px;align-items:end">
+        <div><label>キャンバス幅</label><input type="number" id="cvW"></div>
+        <div><label>キャンバス高さ</label><input type="number" id="cvH"></div>
+        <div style="flex:0 0 auto"><button class="mini" id="bgClear">背景を外す</button></div>
+      </div>
+      <p class="hint">キャンバスの縦横は読み込んだ背景画像にそのまま合わせます。背景を差し替えてサイズが変わった場合は、配置エリア・アイコンの大きさ・手動で動かした位置を<b>すべて同じ比率で拡大縮小</b>するので、レイアウトはそのまま引き継がれます。</p>
+    </div></section>
+
+    <section id="secArea" class="closed"><header>2. 配置エリアと並べ方</header><div class="body">
+      <div class="g4">
+        <div><label>左X</label><input type="number" id="arX"></div>
+        <div><label>上Y</label><input type="number" id="arY"></div>
+        <div><label>幅</label><input type="number" id="arW"></div>
+        <div><label>高さ</label><input type="number" id="arH"></div>
+      </div>
+      <div class="g4" style="margin-top:8px">
+        <div><label>基準アイコン径</label><input type="number" id="baseIcon"></div>
+        <div><label>行間</label><input type="number" id="rowGap"></div>
+        <div><label>列間</label><input type="number" id="colGap"></div>
+        <div><label>並び順</label><select id="sortMode">
+          <option value="auto">バッジの高い順</option>
+          <option value="manual">リストの順番</option>
+        </select></div>
+      </div>
+      <div class="row" style="margin-top:8px;align-items:end">
+        <div><label>フォント</label><select id="fontSel">
+          <option>"Yu Gothic UI","Meiryo",sans-serif</option>
+          <option>"BIZ UDPGothic","Yu Gothic UI",sans-serif</option>
+          <option>"Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif</option>
+          <option>"UD デジタル 教科書体 NP-B",serif</option>
+          <option>"MS PGothic",sans-serif</option>
+          <option value="__custom">（自分で入力）</option>
+        </select></div>
+        <div style="flex:0 0 90px"><label>太さ</label><select id="fontWeight">
+          <option>400</option><option>600</option><option>700</option><option>800</option><option>900</option>
+        </select></div>
+      </div>
+      <div id="fontCustomWrap" style="margin-top:6px;display:none">
+        <input type="text" id="fontCustom" placeholder='例: "源ノ角ゴシック JP", sans-serif'>
+      </div>
+      <label class="inline" style="margin-top:10px"><input type="checkbox" id="showGuide"> 配置エリアのガイド枠を表示（書き出しには入りません）</label>
+      <p class="hint">プレビュー上でアイコンをドラッグすると、その1件だけ位置を手動で動かせます。「位置戻す」で自動配置に戻ります。</p>
+    </div></section>
+
+    <section id="secTier" class="closed"><header>3. バッジ段階ごとの大きさ・色</header><div class="body">
+      <div id="tiers"></div>
+      <div class="row">
+        <button class="mini" id="tierAdd">段階を追加</button>
+        <button class="mini" id="tierReset">初期値に戻す</button>
+      </div>
+      <p class="hint">上の段から順に「この値以上」で判定します。数値を空にしても設定は壊れません（確定した数字だけが反映されます）。</p>
+    </div></section>
+
+    <section id="secList"><header>4. リスナー一覧</header><div class="body">
+      <div id="dropAll">ここに画像をまとめてドロップすると、人数分のリスナーをまとめて追加します</div>
+      <div id="items"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="addItem">＋ リスナーを追加</button>
+        <button class="mini" id="addMulti" style="flex:0 0 auto">画像から一括追加</button>
+        <button class="mini" id="resetPos" style="flex:0 0 auto">位置調整を全リセット</button>
+      </div>
+      <p class="hint">左端のチェックを外した人は画像に出ませんが、一覧には残ります。翌月また出すときはチェックを戻すだけです。</p>
+    </div></section>
+
+    <section id="secData" class="closed"><header>5. データ</header><div class="body">
+      <div class="g3">
+        <button class="mini" id="expJson">設定を書き出し</button>
+        <button class="mini" id="impJson">設定を読み込み</button>
+        <button class="mini" id="impText">テキストから読み込み</button>
+        <button class="mini del" id="clearItems">リスナーを全消去</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="mini" id="cloudPull">他の端末の内容を取り込む</button>
+        <button class="mini del" id="clearAll">背景も含めて初期化</button>
+      </div>
+      <p class="hint" id="cloudNote"></p>
+      <input type="file" id="jsonFile" accept="application/json" hidden>
+      <p class="hint">普段は自動保存なので操作不要です。別の端末へ移すときは「設定を書き出し」で出したテキストを、
+      移った先の「テキストから読み込み」に貼り付けてください。</p>
+    </div></section>
+
+  </div></div>
+  <div id="grip"></div>
+
+  <div id="main">
+    <div id="banner"></div>
+    <div id="bar">
+      <button class="primary" id="dlFull">完成PNGを保存</button>
+      <button id="dlOver">背景01（透過）を保存</button>
+      <button id="fit">エリアに収める</button>
+      <span id="warn"></span>
+      <span class="sp"></span>
+      <select id="zoom" style="width:auto">
+        <option value="fit">画面に合わせる</option>
+        <option value="0.25">25%</option><option value="0.4">40%</option>
+        <option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option>
+      </select>
+      <span id="status"></span>
+    </div>
+    <div id="stage"><div id="wrap"><canvas id="cv"></canvas></div></div>
+  </div>
+</div>
+<div id="modal" hidden>
+  <div class="sheet">
+    <div class="mhead"><b id="mtitle"></b><button type="button" class="mini" id="mclose">閉じる</button></div>
+    <p class="hint" id="mhint" style="margin:0"></p>
+    <div id="mbody"></div>
+  </div>
+</div>
+
+<input type="file" id="iconPicker" accept="image/*" hidden>
+<input type="file" id="iconPickerMulti" accept="image/*" multiple hidden>
+
+<script>
+"use strict";
+
+const BADGE_MIN = 1.0, BADGE_MAX = 5.0;
+const $ = s => document.querySelector(s);
+const cv = $("#cv"), ctx = cv.getContext("2d");
+/* 計測専用の ctx。描画用 ctx のフォント状態を汚さない */
+const mctx = document.createElement("canvas").getContext("2d");
+
+/* 非有限値を既定値に落とす。NaN / null / undefined / 文字列すべてを弾く */
+const num = (v, d) => Number.isFinite(v) ? v : d;
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+/* ============================================================
+   既定値
+   ============================================================ */
+function defaultTiers(){
+  /* 色は参考画像のバッジから読み取った値。★2.0 / ★1.0 は実物を確認できていない仮の色 */
+  const T = (label,min,scale,cols,flow,fs,lx,ly,c,star)=>({
+    label,min,scale,cols,flow,fs,lx,ly,ow:0.22,
+    ring:c, outline:c, text:"#ffffff", badge:c, badgeBorder:"#ffffff", star
+  });
+  return [
+    T("★5.0",   5.00, 1.00, 2, "row", 0.27, -1.24, 0.65, "#f5a623", "#ffe14d"),
+    T("★4.5〜", 4.50, 0.81, 2, "row", 0.28, -1.45, 0.80, "#e8583c", "#ff9f1c"),
+    T("★4.0〜", 4.00, 0.79, 1, "row", 0.26,  0.10, 0.02, "#e8583c", "#c9c9c9"),
+    T("★3.5〜", 3.50, 0.42, 1, "row", 0.32,  0.28, 0.00, "#ff7bc0", "#ffe14d"),
+    T("★3.0〜", 3.00, 0.29, 2, "col", 0.35,  0.15, 0.00, "#ff7bc0", "#ffe14d"),
+    T("★2.0〜", 2.00, 0.26, 2, "col", 0.35,  0.15, 0.00, "#4cc38a", "#ffe14d"),
+    T("★1.0〜", 1.00, 0.24, 2, "col", 0.35,  0.15, 0.00, "#7aa7e8", "#ffe14d"),
+  ];
+}
+const SCHEMA = 4;
+function defaultState(){
+  return {
+    v:SCHEMA,
+    canvas:{w:930, h:1962},
+    bg:null,
+    area:{x:48, y:395, w:845, h:975},
+    baseIcon:215, rowGap:12, colGap:14,
+    sortMode:"auto",
+    font:'"Yu Gothic UI","Meiryo",sans-serif',
+    fontWeight:"700",
+    showGuide:true,
+    tiers:defaultTiers(),
+    items:[]
+  };
+}
+/* 数値項目の [最小, 最大, 既定] */
+const TIER_SPEC = { min:[BADGE_MIN,BADGE_MAX,1], scale:[0.02,20,1], cols:[1,12,1],
+                    fs:[0.02,3,0.28], lx:[-6,6,0.1], ly:[-6,6,0], ow:[0,1,0.22] };
+
+let state = defaultState();
+let bgImg = null;
+const iconCache = new Map();
+let selectedId = null, zoomMode = "fit", lastNodes = [], seqCounter = 1;
+let storageOK = false;
+
+/* ============================================================
+   保存
+   ============================================================ */
+const DB = (()=>{
+  let p = null;
+  const open = () => p || (p = new Promise((res,rej)=>{
+    let r;
+    try{ r = indexedDB.open("teikyo-maker", 1); }catch(e){ rej(e); return; }
+    r.onupgradeneeded = ()=> r.result.createObjectStore("kv");
+    r.onsuccess = ()=> res(r.result);
+    r.onerror   = ()=> rej(r.error);
+    r.onblocked = ()=> rej(new Error("blocked"));
+  }));
+  const tx = (mode, fn) => open().then(db => new Promise((res,rej)=>{
+    const req = fn(db.transaction("kv", mode).objectStore("kv"));
+    req.onsuccess = ()=> res(req.result);
+    req.onerror   = ()=> rej(req.error);
+  }));
+  return {
+    get: k     => tx("readonly",  s => s.get(k)),
+    set: (k,v) => tx("readwrite", s => s.put(v,k)),
+    del: k     => tx("readwrite", s => s.delete(k))
+  };
+})();
+
+/* ============================================================
+   端末をまたいだ保存（Web版）
+   iPhoneでも別のPCでも同じ内容が開けるよう、サーバー側にも置く。
+   1ドキュメント256KiBの上限があるので、背景画像だけは分割して保存する。
+   ============================================================ */
+const CHUNK = 160000;
+let cloud = null, cloudReady = Promise.resolve(null);
+const cloudSent = { icons:new Map(), bg:null };
+
+function initCloud(){
+  cloudReady = (window.claude && typeof window.claude.use === "function")
+    ? window.claude.use("db").then(d => (cloud = d)).catch(()=> null)
+    : Promise.resolve(null);
+  return cloudReady;
+}
+function splitData(str){
+  const out = [];
+  for(let i=0;i<str.length;i+=CHUNK) out.push(str.slice(i, i+CHUNK));
+  return out;
+}
+/* サーバーから読む。無い／使えないときは null */
+async function cloudLoad(){
+  const db = await cloudReady;
+  if(!db) return null;
+  const main = await db.doc("state/main").get();
+  if(!main.exists) return null;
+  const st = JSON.parse(main.data().json);
+
+  const meta = await db.doc("bg/meta").get();
+  const n = meta.exists ? num(meta.data().n, 0) : 0;
+  if(n > 0){
+    const parts = await Promise.all(
+      Array.from({length:n}, (_,i)=> db.doc("bg/c"+i).get()));
+    st.bg = parts.every(p => p.exists) ? parts.map(p => p.data().d).join("") : null;
+  } else st.bg = null;
+
+  const icons = await db.collection("icons").get();
+  const map = new Map(icons.docs.map(d => [d.id, d.data().d]));
+  (st.items || []).forEach(it => { it.icon = map.get(it.id) || null; });
+
+  st.savedAt = main.data().savedAt || "";
+  return st;
+}
+/* 次の保存で全部送り直さないよう、読み込んだ内容を送信済みとして覚える */
+function markCloudSynced(){
+  cloudSent.icons.clear();
+  state.items.forEach(it => { if(it.icon) cloudSent.icons.set(it.id, it.icon); });
+  cloudSent.bg = state.bg;
+}
+async function cloudSave(){
+  const db = await cloudReady;
+  if(!db) return false;
+
+  const slim = JSON.parse(JSON.stringify(state));
+  slim.bg = null;
+  slim.items.forEach(it => { it.icon = null; });
+  const savedAt = new Date().toISOString();
+  await db.doc("state/main").set({ json: JSON.stringify(slim), savedAt });
+
+  for(const it of state.items){
+    if(it.icon && cloudSent.icons.get(it.id) !== it.icon){
+      await db.doc("icons/" + it.id).set({ d: it.icon });
+      cloudSent.icons.set(it.id, it.icon);
+    }
+  }
+  const alive = new Set(state.items.map(i => i.id));
+  for(const id of [...cloudSent.icons.keys()]){
+    if(!alive.has(id)){
+      try{ await db.doc("icons/" + id).delete(); }catch(e){}
+      cloudSent.icons.delete(id);
+    }
+  }
+
+  if(cloudSent.bg !== state.bg){
+    const prev = await db.doc("bg/meta").get();
+    const prevN = prev.exists ? num(prev.data().n, 0) : 0;
+    const parts = state.bg ? splitData(state.bg) : [];
+    for(let i=0;i<parts.length;i++) await db.doc("bg/c"+i).set({ d: parts[i] });
+    for(let i=parts.length;i<prevN;i++){ try{ await db.doc("bg/c"+i).delete(); }catch(e){} }
+    await db.doc("bg/meta").set({ n: parts.length });
+    cloudSent.bg = state.bg;
+  }
+  setCloudNote(savedAt);
+  return true;
+}
+function setCloudNote(iso){
+  const el = $("#cloudNote"), btn = $("#cloudPull");
+  if(btn) btn.hidden = !cloud;
+  if(!el) return;
+  el.textContent = cloud
+    ? (iso ? "この内容は他の端末からも開けます（最終保存 " + new Date(iso).toLocaleString("ja-JP") + "）"
+           : "この内容は他の端末からも開けます")
+    : "作業内容はこのブラウザの中に保存されます。別の端末で続きをするときは、"
+      + "ここで「設定を書き出し」でJSONを保存し、その端末で「設定を読み込み」してください。";
+}
+function cloudErrorText(e){
+  const c = e && e.code;
+  if(c === "resource_exhausted") return "書き込みが混み合っています。少し待ってからもう一度お試しください";
+  if(c === "quota_exceeded")     return "保存できる件数の上限に達しました。使っていないリスナーを削除してください";
+  if(c === "revoked")            return "このページの権限が変わりました。開き直してください";
+  return (e && e.message) || c || String(e);
+}
+
+let saveTimer = null, statusTimer = null;
+function cancelPendingSave(){ clearTimeout(saveTimer); saveTimer = null; }
+function save(){
+  cancelPendingSave();
+  saveTimer = setTimeout(async ()=>{
+    saveTimer = null;
+    let localOK = false;
+    if(storageOK){
+      /* IndexedDB は自前で構造化複製するのでディープコピー不要 */
+      try{ await DB.set("state", state); localOK = true; }catch(e){ localOK = false; }
+    }
+    let remoteOK = false;
+    try{ remoteOK = await cloudSave(); }
+    catch(e){ setStatus("他の端末への保存に失敗: " + cloudErrorText(e)); }
+
+    if(remoteOK) setStatus(localOK ? "保存しました（この端末と他の端末）" : "保存しました（他の端末からも開けます）");
+    else if(localOK) setStatus("保存しました（この端末のみ）");
+    else showBanner("⚠ 自動保存に失敗しました。作業内容が消える恐れがあります。"
+      + "「5. データ → 設定を書き出し」でファイルに保存してください。");
+  }, 400);
+}
+function setStatus(text, action){
+  const el = $("#status");
+  el.textContent = "";
+  el.append(document.createTextNode(text));
+  if(action){
+    const b = document.createElement("button");
+    b.className = "mini"; b.textContent = action.label;
+    b.addEventListener("click", ()=>{ el.textContent = ""; action.run(); });
+    el.append(b);
+  }
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(()=>{ el.textContent = ""; }, action ? 10000 : 2500);
+}
+function showBanner(text){
+  const b = $("#banner");
+  b.textContent = text; b.classList.add("on");
+}
+
+/* ============================================================
+   画像
+   ============================================================ */
+const loadImage = src => new Promise((res,rej)=>{
+  const im = new Image();
+  im.onload = ()=> res(im);
+  im.onerror = ()=> rej(new Error("画像を読み込めませんでした"));
+  im.src = src;
+});
+const fileToDataURL = file => new Promise((res,rej)=>{
+  const fr = new FileReader();
+  fr.onload = ()=> res(fr.result);
+  fr.onerror = ()=> rej(fr.error);
+  fr.readAsDataURL(file);
+});
+/* 短辺基準で中央を正方形に切り出し、縮小して保存。透過が要るものだけPNGで残す */
+async function normalizeIcon(dataURL, size=320){
+  const im = await loadImage(dataURL);
+  const s = Math.min(im.width, im.height);
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const x = c.getContext("2d");
+  x.imageSmoothingQuality = "high";
+  x.drawImage(im, (im.width-s)/2, (im.height-s)/2, s, s, 0, 0, size, size);
+  const png = c.toDataURL("image/png");
+  const jpg = c.toDataURL("image/jpeg", 0.88);
+  return (jpg.length < png.length * 0.75) ? jpg : png;
+}
+
+/* ============================================================
+   描画ヘルパ
+   ============================================================ */
+function roundRect(c,x,y,w,h,r){
+  r = Math.max(0, Math.min(r, w/2, h/2));
+  c.beginPath();
+  c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r);     c.arcTo(x,y,x+w,y,r);
+  c.closePath();
+}
+function starPath(c,cx,cy,r){
+  c.beginPath();
+  for(let i=0;i<10;i++){
+    const rr = (i%2) ? r*0.44 : r;
+    const a = -Math.PI/2 + i*Math.PI/5;
+    const x = cx + Math.cos(a)*rr, y = cy + Math.sin(a)*rr;
+    i ? c.lineTo(x,y) : c.moveTo(x,y);
+  }
+  c.closePath();
+}
+function shade(hex, amt){
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex||"");
+  if(!m) return hex;
+  const n = parseInt(m[1],16), f = v => clamp(Math.round(v + 255*amt), 0, 255);
+  return "#" + [f(n>>16&255), f(n>>8&255), f(n&255)].map(v=>v.toString(16).padStart(2,"0")).join("");
+}
+const fmtBadge = v => num(Number(v), 1).toFixed(2);
+
+/* フォント指定が不正だと ctx.font への代入は例外を出さず黙って無視される。
+   既知の基準値からの変化を見て、使える指定かどうかを一度だけ判定する */
+let fontValid = true;
+const fctx = document.createElement("canvas").getContext("2d");
+function validateFont(){
+  const probe = "1px serif";
+  fctx.font = probe;
+  fctx.font = `${state.fontWeight} 12px ${state.font}`;
+  fontValid = fctx.font !== probe;
+  return fontValid;
+}
+function setFont(c, px){
+  const size = Math.max(1, Math.round(px*100)/100);
+  c.font = `${state.fontWeight} ${size}px ${fontValid ? state.font : "sans-serif"}`;
+}
+function tierOf(badge){
+  const b = num(badge, BADGE_MIN), ts = state.tiers;
+  for(let i=0;i<ts.length;i++) if(b >= num(ts[i].min, -Infinity)) return {t:ts[i], i};
+  return {t:ts[ts.length-1], i:ts.length-1};
+}
+const visibleItems = () => state.items.filter(it => it.on !== false);
+
+/* ============================================================
+   1件分の寸法
+   ============================================================ */
+function metrics(it){
+  const {t} = tierOf(it.badge);
+  const icon = clamp(num(state.baseIcon, 215) * num(it.scale ?? t.scale, 1), 8, 20000);
+  const label = it.name || "";
+
+  const nameFS  = Math.max(4, icon * num(t.fs, 0.28));
+  const badgeFS = nameFS * 0.72;
+  const strokeW = nameFS * clamp(num(t.ow, 0.22), 0, 1);
+
+  setFont(mctx, nameFS);
+  const nameW = label ? mctx.measureText(label).width : 0;
+  setFont(mctx, badgeFS);
+  const numW = mctx.measureText(fmtBadge(it.badge)).width;
+
+  /* 名前は枠なしの縁取り文字。占有幅は文字幅＋縁の太さぶんだけ */
+  const pillH = nameFS * 1.30 + strokeW;
+  const pillW = label ? nameW + strokeW : 0;
+  const gapNB = label ? icon * 0.06 : 0;
+  const chipH = badgeFS * 1.90, starR = badgeFS * 0.66;
+  const chipW = badgeFS*0.5 + starR*2 + badgeFS*0.34 + numW + badgeFS*0.55;
+
+  const pillX = icon * (1 + num(t.lx, 0.1));
+  const chipX = pillX + pillW + gapNB;
+  const cy    = icon/2 + num(t.ly, 0) * icon;
+  const labelH = Math.max(pillH, chipH);
+
+  const ox = Math.max(0, -pillX);
+  const oy = Math.max(0, -(cy - labelH/2));
+
+  return {
+    icon, nameFS, badgeFS, strokeW, starR, label,
+    ox, oy,
+    pillX: ox + pillX, pillW, pillH,
+    chipX: ox + chipX, chipW, chipH,
+    cy: oy + cy,
+    w: ox + Math.max(icon, chipX + chipW),
+    h: oy + Math.max(icon, cy + labelH/2),
+    t
+  };
+}
+
+/* ============================================================
+   自動レイアウト
+   ============================================================ */
+function layout(){
+  const items = visibleItems();
+  if(state.sortMode === "auto"){
+    items.sort((a,b)=> num(b.badge,0) - num(a.badge,0) || num(a.seq,0) - num(b.seq,0));
+  }
+
+  /* 1) 行に詰める。段が変わったら必ず行を切るので、1行には同じ段の人だけが並ぶ */
+  const rows = [];
+  for(let i=0;i<items.length;){
+    const ti  = tierOf(items[i].badge).i;
+    const cap = clamp(Math.round(num(state.tiers[ti].cols, 1)) || 1, 1, 12);
+    const chunk = [];
+    while(chunk.length < cap && i < items.length && tierOf(items[i].badge).i === ti) chunk.push(items[i++]);
+    rows.push({ cap, tier: ti, items: chunk });
+  }
+
+  /* 2) 「縦に流す」ティアは、連続する行をまとめて列方向に並べ替える */
+  for(let a=0; a<rows.length; ){
+    const ti = rows[a].tier;
+    if(state.tiers[ti].flow !== "col" || rows[a].cap < 2){ a++; continue; }
+    let b = a;
+    /* 同じ段の行が続く範囲を、まとめて列方向に並べ替える */
+    while(b < rows.length && rows[b].tier === ti) b++;
+    const run = rows.slice(a,b);
+    const flat = run.flatMap(r=>r.items);
+    const cap = run[0].cap, per = Math.ceil(flat.length / cap);
+    run.forEach((r, ri)=>{
+      const next = [];
+      for(let c=0;c<cap;c++) if(flat[c*per + ri]) next.push(flat[c*per + ri]);
+      r.items = next;
+    });
+    a = b;
+  }
+
+  /* 3) 座標を確定。行内で前の人と重なるなら右へ逃がす */
+  const out = [];
+  const ax = num(state.area.x, 0), ay = num(state.area.y, 0);
+  const aw = Math.max(1, num(state.area.w, 100));
+  const cg = num(state.colGap, 0), rg = num(state.rowGap, 0);
+  let y = ay;
+  rows.forEach(r=>{
+    const colW = (aw - cg*(r.cap-1)) / r.cap;
+    let rowH = 0, prevRight = -Infinity;
+    r.items.forEach((it, ci)=>{
+      const m = metrics(it);
+      const x = Math.max(ax + ci*(colW + cg), prevRight + cg);
+      prevRight = x + m.w;
+      const off = it.off || {x:0,y:0};
+      out.push({ it, m, x: x + num(off.x,0), y: y + num(off.y,0) });
+      rowH = Math.max(rowH, m.h);
+    });
+    y += rowH + rg;
+  });
+  return out;
+}
+
+/* ============================================================
+   描画
+   ============================================================ */
+function drawItem(c, node){
+  const {it, m, x, y} = node, t = m.t;
+  const icon = m.icon;
+  const ringW = Math.max(2, icon*0.045);
+  const ix = x + m.ox, iy = y + m.oy;
+  const cx = ix + icon/2, icy = iy + icon/2, r = Math.max(1, icon/2 - ringW/2);
+
+  c.save();
+  c.beginPath(); c.arc(cx, icy, r, 0, Math.PI*2); c.closePath();
+  c.fillStyle = "#efeaf7"; c.fill();
+  const img = iconCache.get(it.id);
+  if(img){ c.clip(); c.drawImage(img, cx-r, icy-r, r*2, r*2); }
+  c.restore();
+  c.lineWidth = ringW; c.strokeStyle = t.ring;
+  c.beginPath(); c.arc(cx, icy, r, 0, Math.PI*2); c.stroke();
+
+  const cy = y + m.cy;
+
+  if(m.label){
+    const tx = x + m.pillX + m.strokeW/2, ty = cy + m.nameFS*0.04;
+    setFont(c, m.nameFS);
+    c.textBaseline = "middle"; c.textAlign = "left";
+    if(m.strokeW > 0){
+      c.lineJoin = "round"; c.miterLimit = 2;
+      c.lineWidth = m.strokeW; c.strokeStyle = t.outline;
+      c.strokeText(m.label, tx, ty);
+    }
+    c.fillStyle = t.text;
+    c.fillText(m.label, tx, ty);
+  }
+
+  const gx = x + m.chipX, gy = cy - m.chipH/2;
+  roundRect(c, gx, gy, m.chipW, m.chipH, m.chipH*0.34);
+  c.fillStyle = t.badge; c.fill();
+  c.lineWidth = Math.max(2, m.badgeFS*0.17); c.strokeStyle = t.badgeBorder || t.ring; c.stroke();
+
+  const sx = gx + m.badgeFS*0.5 + m.starR;
+  starPath(c, sx, cy, m.starR);
+  c.fillStyle = t.star; c.fill();
+  c.lineWidth = Math.max(1, m.starR*0.16); c.strokeStyle = shade(t.star, -0.20); c.stroke();
+
+  setFont(c, m.badgeFS);
+  c.textBaseline = "middle"; c.textAlign = "left"; c.fillStyle = "#ffffff";
+  c.fillText(fmtBadge(it.badge), sx + m.starR + m.badgeFS*0.34, cy + m.badgeFS*0.04);
+}
+
+function render(opts){
+  opts = opts || {};
+  const withBg    = opts.withBg    !== false;
+  const withGuide = opts.withGuide !== false && state.showGuide;
+
+  const w = clamp(Math.round(num(state.canvas.w, 930)), 1, 20000);
+  const h = clamp(Math.round(num(state.canvas.h, 1962)), 1, 20000);
+  if(cv.width !== w)  cv.width  = w;
+  if(cv.height !== h) cv.height = h;
+
+  ctx.clearRect(0,0,w,h);
+  if(withBg && bgImg) ctx.drawImage(bgImg, 0, 0, w, h);
+
+  const nodes = layout();
+  nodes.forEach(n => drawItem(ctx, n));
+
+  if(withGuide){
+    ctx.save();
+    ctx.setLineDash([10,8]); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(123,79,214,.85)";
+    ctx.strokeRect(num(state.area.x,0), num(state.area.y,0),
+                   num(state.area.w,0), num(state.area.h,0));
+    ctx.restore();
+  }
+  if(opts.hit !== false){ lastNodes = nodes; checkWarnings(nodes); updateTierCounts(); }
+  applyZoom();
+}
+
+/* 「画像から切れる」と「エリアからはみ出す」を分けて伝える */
+function checkWarnings(nodes){
+  const el = $("#warn");
+  el.textContent = "";
+  if(!fontValid){
+    el.textContent = "⚠ フォント指定が正しくないため既定フォントで描いています";
+    return;
+  }
+  if(!nodes.length) return;
+
+  const cut = nodes.filter(n =>
+    n.x + n.m.w > cv.width || n.y + n.m.h > cv.height || n.x < 0 || n.y < 0);
+  if(cut.length){
+    const names = cut.map(n => n.m.label || "（名前なし）").slice(0,3).join("、");
+    el.textContent = `⚠ 画像から切れています：${names}${cut.length>3?` ほか${cut.length-3}件`:""}`
+      + " ←「エリアに収める」を押してください";
+    return;
+  }
+  const ab = num(state.area.y,0) + num(state.area.h,0);
+  const ar = num(state.area.x,0) + num(state.area.w,0);
+  const bottom = Math.max(...nodes.map(n => n.y + n.m.h));
+  const right  = Math.max(...nodes.map(n => n.x + n.m.w));
+  const msgs = [];
+  if(bottom > ab) msgs.push(`縦に${Math.round(bottom-ab)}px`);
+  if(right  > ar) msgs.push(`横に${Math.round(right-ar)}px`);
+  if(msgs.length) el.textContent = `⚠ 配置エリアから ${msgs.join(" / ")} はみ出しています`;
+}
+
+/* 配置エリアに収まる最大の基準アイコン径を探す */
+function fitToArea(){
+  const ab = num(state.area.y,0) + num(state.area.h,0);
+  const ar = num(state.area.x,0) + num(state.area.w,0);
+  const fits = v => {
+    const keep = state.baseIcon;
+    state.baseIcon = v;
+    const ns = layout();
+    state.baseIcon = keep;
+    if(!ns.length) return true;
+    return ns.every(n => n.x + n.m.w <= Math.min(ar, cv.width)
+                      && n.y + n.m.h <= Math.min(ab, cv.height));
+  };
+  let lo = 8, hi = Math.max(8, num(state.baseIcon, 215));
+  if(fits(hi)){                       /* 既に収まっているなら広げられるだけ広げる */
+    hi = Math.min(2000, cv.width);
+    if(fits(hi)){ state.baseIcon = Math.round(hi); render(); save(); return; }
+    lo = num(state.baseIcon, 215);
+  }
+  for(let i=0;i<24;i++){
+    const mid = (lo+hi)/2;
+    if(fits(mid)) lo = mid; else hi = mid;
+  }
+  state.baseIcon = Math.floor(lo);
+  syncControls(); render(); save();
+  setStatus(`基準アイコン径を ${state.baseIcon}px にしました`);
+}
+
+function applyZoom(){
+  const stage = $("#stage");
+  if(!stage.clientWidth || !stage.clientHeight) return;   /* タブで隠れている */
+  let s = zoomMode === "fit"
+    ? Math.min((stage.clientWidth-40)/cv.width, (stage.clientHeight-40)/cv.height, 1)
+    : parseFloat(zoomMode);
+  if(!Number.isFinite(s) || s <= 0) s = 0.4;
+  const w = cv.width*s + "px", h = cv.height*s + "px";
+  cv.style.width = w; cv.style.height = h;
+  $("#wrap").style.width = w; $("#wrap").style.height = h;
+}
+window.addEventListener("resize", ()=>{ if(zoomMode === "fit") applyZoom(); });
+
+/* ============================================================
+   背景差し替えに伴う比率スケール
+   ============================================================ */
+function rescaleGeometry(oldW, oldH, newW, newH){
+  if(!(oldW>0 && oldH>0 && newW>0 && newH>0)) return;
+  const sx = newW/oldW, sy = newH/oldH;
+  if(Math.abs(sx-1) < 1e-6 && Math.abs(sy-1) < 1e-6) return;
+  const R = v => Math.round(v*100)/100;
+  state.area = { x:R(num(state.area.x,0)*sx), y:R(num(state.area.y,0)*sy),
+                 w:R(num(state.area.w,0)*sx), h:R(num(state.area.h,0)*sy) };
+  state.baseIcon = R(num(state.baseIcon,215)*sx);
+  state.rowGap   = R(num(state.rowGap,12)*sy);
+  state.colGap   = R(num(state.colGap,14)*sx);
+  state.items.forEach(it=>{
+    if(it.off) it.off = { x:R(num(it.off.x,0)*sx), y:R(num(it.off.y,0)*sy) };
+  });
+}
+
+/* ============================================================
+   ドラッグ
+   ============================================================ */
+let drag = null;
+const DRAG_THRESHOLD = 4;
+function toCanvas(ev){
+  const r = cv.getBoundingClientRect();
+  return { x:(ev.clientX-r.left)*cv.width/r.width, y:(ev.clientY-r.top)*cv.height/r.height };
+}
+function hit(p){
+  for(let i=lastNodes.length-1;i>=0;i--){
+    const n = lastNodes[i], m = n.m;
+    const cx = n.x+m.ox+m.icon/2, cy = n.y+m.oy+m.icon/2;
+    if((p.x-cx)**2 + (p.y-cy)**2 <= (m.icon/2)**2) return n;   /* アイコンの円 */
+    const ly = n.y+m.cy, lh = Math.max(m.pillH, m.chipH)/2;
+    if(p.x >= n.x+m.pillX && p.x <= n.x+m.chipX+m.chipW &&
+       p.y >= ly-lh && p.y <= ly+lh) return n;                 /* 名前＋バッジの帯 */
+  }
+  return null;
+}
+function endDrag(ev){
+  if(drag){
+    const moved = drag.moved;
+    drag = null; cv.className = "grab";
+    if(moved){ render(); renderList(); save(); }
+  }
+  if(ev) try{ cv.releasePointerCapture(ev.pointerId); }catch(e){}
+}
+cv.addEventListener("pointermove", ev=>{
+  if(drag){
+    const p = toCanvas(ev);
+    const dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+    if(!drag.moved && Math.hypot(dx,dy) < DRAG_THRESHOLD) return;
+    drag.moved = true;
+    drag.it.off = { x: drag.base.x + dx, y: drag.base.y + dy };
+    render({hit:false});
+    return;
+  }
+  cv.className = hit(toCanvas(ev)) ? "grab" : "";
+});
+cv.addEventListener("pointerdown", ev=>{
+  const p = toCanvas(ev), n = hit(p);
+  if(!n){ setSelected(null); return; }
+  setSelected(n.it.id);
+  const off = n.it.off || {x:0,y:0};
+  drag = { it:n.it, start:p, base:{x:num(off.x,0), y:num(off.y,0)}, moved:false };
+  try{ cv.setPointerCapture(ev.pointerId); }catch(e){}
+  cv.className = "grabbing";
+});
+cv.addEventListener("pointerup", endDrag);
+cv.addEventListener("pointercancel", endDrag);
+
+/* ============================================================
+   リスナー一覧 UI
+   ============================================================ */
+function newItem(){
+  return { id:"i"+Math.random().toString(36).slice(2,9), seq:seqCounter++,
+           name:"", badge:3.00, icon:null, scale:null, off:null, on:true };
+}
+function badgeOptions(){
+  const f = document.createDocumentFragment();
+  for(let n = Math.round(BADGE_MAX*10); n >= Math.round(BADGE_MIN*10); n--){
+    const o = document.createElement("option");
+    o.value = String(n/10); o.textContent = fmtBadge(n/10);
+    f.append(o);
+  }
+  return f;
+}
+/* 選択の切り替えだけで一覧を作り直さない */
+function setSelected(id){
+  selectedId = id;
+  $("#items").querySelectorAll(".item").forEach(el =>
+    el.classList.toggle("sel", el.__item && el.__item.id === id));
+  const cur = [...$("#items").children].find(el => el.__item && el.__item.id === id);
+  if(cur) cur.scrollIntoView({block:"nearest"});
+  render();
+}
+
+const ITEM_HTML = `
+  <div class="on"><input type="checkbox" data-act="on" title="この画像に出す"></div>
+  <div class="thumb" data-act="pick" title="クリック or 画像をドロップ"></div>
+  <div class="fields">
+    <input type="text" data-act="name" placeholder="表示名（絵文字もOK）">
+    <div class="g3">
+      <div><label>バッジ</label><select data-act="badge"></select></div>
+      <div><label>大きさ</label><select data-act="scaleMode">
+        <option value="auto">自動</option><option value="manual">手動</option>
+      </select></div>
+      <div><label>倍率</label><input type="number" step="0.01" min="0.05" data-act="scale"></div>
+    </div>
+  </div>
+  <div class="ctl">
+    <div class="row" style="gap:3px">
+      <button class="mini" data-act="up">↑</button>
+      <button class="mini" data-act="down">↓</button>
+    </div>
+    <button class="mini" data-act="reset">位置戻す</button>
+    <button class="mini del" data-act="del">削除</button>
+    <span class="tag" data-act="tag" hidden>位置調整済</span>
+  </div>`;
+
+function renderList(){
+  const box = $("#items");
+  box.textContent = "";
+  const manual = state.sortMode === "manual";
+  state.items.forEach((it, idx)=>{
+    const el = document.createElement("div");
+    el.className = "item";
+    el.innerHTML = ITEM_HTML;          /* 固定の雛形のみ。データは一切埋めない */
+    el.__item = it;
+    box.append(el);
+    el.querySelector("[data-act=badge]").append(badgeOptions());
+    syncItemRow(el, it, idx, manual);
+    el.addEventListener("input",  e=>onItemInput(e, it, el));
+    el.addEventListener("change", e=>onItemInput(e, it, el));
+    el.addEventListener("click",  e=>onItemClick(e, it));
+    const th = el.querySelector(".thumb");
+    th.addEventListener("dragover",  e=>{ e.preventDefault(); th.classList.add("drop"); });
+    th.addEventListener("dragleave", ()=> th.classList.remove("drop"));
+    th.addEventListener("drop", async e=>{
+      e.preventDefault(); th.classList.remove("drop");
+      if(e.dataTransfer.files[0]) await setIcon(it, e.dataTransfer.files[0]);
+    });
+  });
+}
+/* 値はすべてプロパティ代入。HTML文字列に混ぜない */
+function syncItemRow(el, it, idx, manual){
+  const {t} = tierOf(it.badge);
+  const q = s => el.querySelector(s);
+  el.classList.toggle("sel", it.id === selectedId);
+  el.classList.toggle("off", it.on === false);
+  q("[data-act=on]").checked = it.on !== false;
+  q("[data-act=name]").value = it.name || "";
+  q("[data-act=badge]").value = String(num(it.badge, 3));
+  q("[data-act=scaleMode]").value = it.scale == null ? "auto" : "manual";
+  const sc = q("[data-act=scale]");
+  sc.value = num(it.scale ?? t.scale, 1).toFixed(2);
+  sc.disabled = it.scale == null;
+  q("[data-act=up]").disabled   = !manual || idx === 0;
+  q("[data-act=down]").disabled = !manual || idx === state.items.length-1;
+  q("[data-act=up]").title = q("[data-act=down]").title =
+    manual ? "順番を入れ替える" : "並び順を「リストの順番」にすると使えます";
+  q("[data-act=reset]").disabled = !it.off;
+  q("[data-act=tag]").hidden = !it.off;
+  const th = q(".thumb");
+  th.classList.toggle("has", !!it.icon);
+  th.style.backgroundImage = it.icon ? `url("${it.icon}")` : "";
+  th.textContent = it.icon ? "" : "画像";
+}
+function refreshRow(it){
+  const manual = state.sortMode === "manual";
+  const idx = state.items.indexOf(it);
+  const el = [...$("#items").children].find(e => e.__item === it);
+  if(el) syncItemRow(el, it, idx, manual);
+}
+function onItemInput(e, it, el){
+  const a = e.target.dataset.act;
+  if(a === "name"){ it.name = e.target.value; render(); save(); }
+  else if(a === "on"){ it.on = e.target.checked; el.classList.toggle("off", !it.on); render(); save(); }
+  else if(a === "badge"){
+    it.badge = clamp(num(parseFloat(e.target.value), 3), BADGE_MIN, BADGE_MAX);
+    render(); refreshRow(it); save();
+  }
+  else if(a === "scaleMode"){
+    it.scale = e.target.value === "manual" ? num(tierOf(it.badge).t.scale, 1) : null;
+    render(); refreshRow(it); save();
+  }
+  else if(a === "scale"){
+    const v = parseFloat(e.target.value);
+    if(!Number.isFinite(v) || v <= 0) return;       /* 空欄・入力途中は無視 */
+    it.scale = clamp(v, 0.02, 20); render(); save();
+  }
+}
+function onItemClick(e, it){
+  const a = e.target.dataset.act;
+  if(a === "pick"){ pickIconFor = it; $("#iconPicker").value = ""; $("#iconPicker").click(); }
+  else if(a === "del")   deleteItem(it);
+  else if(a === "reset"){ it.off = null; render(); refreshRow(it); save(); }
+  else if(a === "up" || a === "down"){
+    const idx = state.items.indexOf(it);
+    const to = idx + (a === "up" ? -1 : 1);
+    if(to < 0 || to >= state.items.length) return;
+    state.items.splice(to, 0, state.items.splice(idx,1)[0]);
+    reseq(); render(); renderList(); save();
+  }
+}
+function deleteItem(it){
+  const idx = state.items.indexOf(it);
+  if(idx < 0) return;
+  const img = iconCache.get(it.id);
+  state.items.splice(idx,1); iconCache.delete(it.id); reseq();
+  render(); renderList(); save();
+  setStatus(`「${it.name || "名前なし"}」を削除しました`, {
+    label:"元に戻す",
+    run(){
+      state.items.splice(Math.min(idx, state.items.length), 0, it);
+      if(img) iconCache.set(it.id, img);
+      reseq(); render(); renderList(); save();
+    }
+  });
+}
+function reseq(){ state.items.forEach((it,i)=> it.seq = i); seqCounter = state.items.length; }
+
+let pickIconFor = null;
+$("#iconPicker").addEventListener("change", async e=>{
+  if(e.target.files[0] && pickIconFor) await setIcon(pickIconFor, e.target.files[0]);
+  pickIconFor = null;
+});
+async function setIcon(it, file){
+  try{
+    it.icon = await normalizeIcon(await fileToDataURL(file));
+    iconCache.set(it.id, await loadImage(it.icon));
+    render(); refreshRow(it); save();
+  }catch(err){ alert("画像を読み込めませんでした: " + err.message); }
+}
+/* 複数画像から人をまとめて作る */
+async function addFromFiles(files){
+  const list = [...files].filter(f => f.type.startsWith("image/"));
+  if(!list.length) return;
+  setStatus(`${list.length}件の画像を読み込んでいます…`);
+  for(const f of list){
+    const it = newItem();
+    it.name = f.name.replace(/\.[^.]+$/, "");
+    try{
+      it.icon = await normalizeIcon(await fileToDataURL(f));
+      state.items.push(it);
+      iconCache.set(it.id, await loadImage(it.icon));
+    }catch(e){ /* 読めない画像は飛ばす */ }
+  }
+  reseq(); render(); renderList(); save();
+  setStatus(`${list.length}件を追加しました`);
+}
+$("#addMulti").addEventListener("click", ()=>{ $("#iconPickerMulti").value=""; $("#iconPickerMulti").click(); });
+$("#iconPickerMulti").addEventListener("change", e=> addFromFiles(e.target.files));
+(function(){
+  const dz = $("#dropAll");
+  dz.addEventListener("dragover",  e=>{ e.preventDefault(); dz.classList.add("drop"); });
+  dz.addEventListener("dragleave", ()=> dz.classList.remove("drop"));
+  dz.addEventListener("drop", e=>{ e.preventDefault(); dz.classList.remove("drop"); addFromFiles(e.dataTransfer.files); });
+})();
+$("#addItem").addEventListener("click", ()=>{
+  const it = newItem();
+  state.items.push(it); reseq(); selectedId = it.id;
+  render(); renderList(); save();
+  const last = $("#items").lastElementChild;
+  if(last) last.querySelector("[data-act=name]").focus();
+});
+$("#resetPos").addEventListener("click", ()=>{
+  if(!state.items.some(it=>it.off)) return;
+  if(!confirm("手動で動かした位置をすべて自動配置に戻します。よろしいですか？")) return;
+  state.items.forEach(it => it.off = null);
+  render(); renderList(); save();
+});
+
+/* ============================================================
+   ティア UI
+   ============================================================ */
+const NUMS = [["min","この値以上","0.01",1],["scale","倍率","0.01",1],["fs","文字%","1",100],
+              ["lx","名前X%","1",100],["ly","名前Y%","1",100],["ow","縁太さ%","1",100]];
+const COLORS = [["ring","アイコン枠"],["outline","名前の縁"],["text","名前の文字"],
+                ["badge","バッジ地"],["badgeBorder","バッジ枠"],["star","星"]];
+const TIER_HTML = `
+  <div class="ttl"><b></b><span class="cnt"></span><button class="mini del" data-del="1">削除</button></div>
+  <div class="g6">
+    ${NUMS.map(([k,l,s])=>`<div><label>${l}</label><input type="number" step="${s}" data-k="${k}"></div>`).join("")}
+    <div><label>1行</label><input type="number" step="1" min="1" data-k="cols"></div>
+  </div>
+  <div class="g2" style="margin-top:6px">
+    <div><label>並べ方</label><select data-k="flow">
+      <option value="row">横に流す</option><option value="col">縦に流す（左の列から）</option>
+    </select></div>
+    <div><label>段の名前</label><input type="text" data-k="label"></div>
+  </div>
+  <details class="adv"><summary>色の設定</summary>
+    <div class="g6 sw" style="margin-top:6px">
+      ${COLORS.map(([k,l])=>`<div><label>${l}</label><input type="color" data-k="${k}"></div>`).join("")}
+    </div>
+  </details>`;
+
+function renderTiers(){
+  const box = $("#tiers");
+  box.textContent = "";
+  state.tiers.forEach(t => box.append(buildTier(t)));
+  numberTiers();
+}
+function buildTier(t){
+  const el = document.createElement("div");
+  el.className = "tier";
+  el.innerHTML = TIER_HTML;            /* 雛形のみ。データは埋めない */
+  el.__tier = t;
+  syncTier(el);
+  el.addEventListener("input", e=>{
+    const k = e.target.dataset.k; if(!k) return;
+    if(e.target.type === "number"){
+      const spec = TIER_SPEC[k];
+      const raw = parseFloat(e.target.value);
+      if(!Number.isFinite(raw)){ e.target.classList.add("bad"); return; }  /* 空欄は state に触れない */
+      e.target.classList.remove("bad");
+      const mul = (NUMS.find(n=>n[0]===k) || [,,,1])[3] || 1;
+      t[k] = spec ? clamp(raw/mul, spec[0], spec[1]) : raw/mul;
+    } else {
+      t[k] = e.target.value;
+      if(k === "label") el.querySelector(".ttl b").textContent = t.label || "";
+    }
+    render(); save();
+    if(k === "scale" || k === "min") state.items.forEach(refreshRow);
+  });
+  el.addEventListener("change", e=>{
+    if(e.target.dataset.k !== "min") return;
+    sortTiers();
+    /* DOM は捨てずに並べ替えるだけ。フォーカスもインデックスも壊さない */
+    const box = $("#tiers");
+    const map = new Map([...box.children].map(c => [c.__tier, c]));
+    state.tiers.forEach(x => box.append(map.get(x)));
+    numberTiers();
+    e.target.focus();
+    render(); state.items.forEach(refreshRow); save();
+  });
+  el.addEventListener("click", e=>{
+    if(!e.target.dataset.del) return;
+    if(state.tiers.length < 2) return;
+    if(!confirm(`段「${t.label || ""}」を削除します。よろしいですか？`)) return;
+    const i = state.tiers.indexOf(t);        /* インデックスはその場で引く */
+    if(i < 0) return;
+    state.tiers.splice(i,1); el.remove(); numberTiers();
+    render(); renderList(); save();
+  });
+  return el;
+}
+function syncTier(el){
+  const t = el.__tier;
+  NUMS.concat([["cols","","",1]]).forEach(([k,,,mul])=>{
+    const inp = el.querySelector(`[data-k="${k}"]`);
+    if(inp) inp.value = String(Math.round(num(t[k], 0) * (mul||1) * 1000)/1000);
+  });
+  el.querySelector('[data-k="flow"]').value = t.flow === "col" ? "col" : "row";
+  el.querySelector('[data-k="label"]').value = t.label || "";
+  COLORS.forEach(([k])=>{
+    const inp = el.querySelector(`[data-k="${k}"]`);
+    if(inp) inp.value = /^#[0-9a-f]{6}$/i.test(t[k]||"") ? t[k] : "#ffffff";
+  });
+  el.querySelector(".ttl b").textContent = t.label || "";
+}
+function numberTiers(){
+  [...$("#tiers").children].forEach((el,i)=>{
+    const b = el.querySelector(".ttl b");
+    if(!b.textContent) b.textContent = "段階" + (i+1);
+    el.querySelector("[data-del]").disabled = state.tiers.length < 2;
+  });
+  updateTierCounts();
+}
+/* 段ごとに今この画像に何人いるかを出す。人数が毎回変わるので目安になる */
+function updateTierCounts(){
+  const n = state.tiers.map(()=>0);
+  visibleItems().forEach(it => n[tierOf(it.badge).i]++);
+  [...$("#tiers").children].forEach(el=>{
+    const i = state.tiers.indexOf(el.__tier);
+    const c = el.querySelector(".cnt");
+    if(c) c.textContent = i < 0 ? "" : `今 ${n[i]}人`;
+  });
+}
+function sortTiers(){ state.tiers.sort((a,b)=> num(b.min,0) - num(a.min,0)); }
+$("#tierAdd").addEventListener("click", ()=>{
+  const last = state.tiers[state.tiers.length-1];
+  const t = {...last, label:"新しい段", min: clamp(num(last.min,1) - 0.5, BADGE_MIN, BADGE_MAX)};
+  state.tiers.push(t); sortTiers(); renderTiers(); render(); save();
+});
+$("#tierReset").addEventListener("click", ()=>{
+  if(!confirm("バッジ段階の設定を初期値に戻します。よろしいですか？")) return;
+  state.tiers = defaultTiers(); renderTiers(); render(); renderList(); save();
+});
+
+/* ============================================================
+   各種入力
+   ============================================================ */
+function bindNum(sel, get, set, lo, hi){
+  const el = $(sel);
+  el.value = get();
+  el.addEventListener("input", ()=>{
+    const v = parseFloat(el.value);
+    if(!Number.isFinite(v)){ el.classList.add("bad"); return; }
+    el.classList.remove("bad");
+    set(clamp(v, lo, hi)); render(); save();
+  });
+}
+function syncControls(){
+  $("#cvW").value = state.canvas.w;  $("#cvH").value = state.canvas.h;
+  $("#arX").value = state.area.x;    $("#arY").value = state.area.y;
+  $("#arW").value = state.area.w;    $("#arH").value = state.area.h;
+  $("#baseIcon").value = state.baseIcon;
+  $("#rowGap").value = state.rowGap; $("#colGap").value = state.colGap;
+  $("#sortMode").value = state.sortMode;
+  $("#fontWeight").value = state.fontWeight;
+  $("#showGuide").checked = !!state.showGuide;
+  const opt = [...$("#fontSel").options].find(o => o.value === state.font);
+  if(opt){ $("#fontSel").value = opt.value; $("#fontCustomWrap").style.display = "none"; }
+  else { $("#fontSel").value = "__custom"; $("#fontCustomWrap").style.display = "block";
+         $("#fontCustom").value = state.font; }
+}
+function wireControls(){
+  bindNum("#cvW", ()=>state.canvas.w, v=>state.canvas.w=v, 16, 20000);
+  bindNum("#cvH", ()=>state.canvas.h, v=>state.canvas.h=v, 16, 20000);
+  bindNum("#arX", ()=>state.area.x, v=>state.area.x=v, -20000, 20000);
+  bindNum("#arY", ()=>state.area.y, v=>state.area.y=v, -20000, 20000);
+  bindNum("#arW", ()=>state.area.w, v=>state.area.w=v, 1, 20000);
+  bindNum("#arH", ()=>state.area.h, v=>state.area.h=v, 1, 20000);
+  bindNum("#baseIcon", ()=>state.baseIcon, v=>state.baseIcon=v, 8, 4000);
+  bindNum("#rowGap", ()=>state.rowGap, v=>state.rowGap=v, -500, 2000);
+  bindNum("#colGap", ()=>state.colGap, v=>state.colGap=v, -500, 2000);
+
+  $("#sortMode").addEventListener("change", e=>{
+    state.sortMode = e.target.value; render(); renderList(); save();
+  });
+  $("#fontWeight").addEventListener("change", e=>{
+    state.fontWeight = e.target.value; validateFont(); render(); save();
+  });
+  $("#showGuide").addEventListener("change",  e=>{ state.showGuide = e.target.checked; render(); save(); });
+  $("#fontSel").addEventListener("change", e=>{
+    if(e.target.value === "__custom"){ $("#fontCustomWrap").style.display = "block"; $("#fontCustom").focus(); }
+    else { $("#fontCustomWrap").style.display = "none"; state.font = e.target.value;
+           validateFont(); render(); save(); }
+  });
+  $("#fontCustom").addEventListener("change", e=>{
+    state.font = e.target.value;
+    e.target.classList.toggle("bad", !validateFont());
+    render(); save();
+  });
+  $("#zoom").addEventListener("change", e=>{ zoomMode = e.target.value; applyZoom(); });
+  $("#fit").addEventListener("click", fitToArea);
+
+  $("#bgFile").addEventListener("change", async e=>{
+    const f = e.target.files[0]; if(!f) return;
+    try{
+      const url = await fileToDataURL(f);
+      const im  = await loadImage(url);
+      /* 背景を差し替えてサイズが変わったら、レイアウトを同じ比率で追従させる */
+      rescaleGeometry(state.canvas.w, state.canvas.h, im.naturalWidth, im.naturalHeight);
+      state.bg = url; bgImg = im;
+      state.canvas.w = im.naturalWidth; state.canvas.h = im.naturalHeight;
+      syncControls(); render(); save();
+      setStatus(`背景を読み込みました（${im.naturalWidth}×${im.naturalHeight}）`);
+    }catch(err){ alert("背景を読み込めませんでした: " + err.message); }
+    e.target.value = "";
+  });
+  $("#bgClear").addEventListener("click", ()=>{
+    state.bg = null; bgImg = null; $("#bgFile").value = ""; render(); save();
+  });
+
+  document.querySelectorAll("section>header").forEach(h=>{
+    h.addEventListener("click", ()=> h.parentElement.classList.toggle("closed"));
+  });
+}
+
+/* スマホのタブ切り替え */
+(function(){
+  document.body.classList.add("pane-edit");
+  $("#tabs").addEventListener("click", e=>{
+    const p = e.target.dataset && e.target.dataset.pane;
+    if(!p) return;
+    document.body.classList.remove("pane-edit","pane-preview");
+    document.body.classList.add("pane-" + p);
+    [...$("#tabs").children].forEach(b => b.classList.toggle("on", b.dataset.pane === p));
+    applyZoom();
+  });
+})();
+
+/* サイドバー幅 */
+(function(){
+  const grip = $("#grip"), side = $("#side");
+  let on = false;
+  grip.addEventListener("pointerdown", e=>{ on = true; grip.setPointerCapture(e.pointerId); });
+  grip.addEventListener("pointermove", e=>{
+    if(!on) return;
+    side.style.width = clamp(e.clientX, 340, innerWidth*0.7) + "px";
+    if(zoomMode === "fit") applyZoom();
+  });
+  grip.addEventListener("pointerup", e=>{ on = false; try{ grip.releasePointerCapture(e.pointerId); }catch(_){} });
+})();
+
+/* ============================================================
+   書き出し
+   ============================================================ */
+function stamp(){
+  const d = new Date(), p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}`;
+}
+/* ---- 書き出しパネル ---- */
+function openModal(title, hint, node){
+  $("#mtitle").textContent = title;
+  $("#mhint").textContent = hint;
+  const b = $("#mbody");
+  b.textContent = "";
+  b.append(node);
+  $("#modal").hidden = false;
+}
+function closeModal(){
+  const b = $("#mbody");
+  b.querySelectorAll("img").forEach(im=>{
+    if(im.src.startsWith("blob:")) URL.revokeObjectURL(im.src);
+  });
+  b.textContent = "";
+  $("#modal").hidden = true;
+}
+$("#mclose").addEventListener("click", closeModal);
+$("#modal").addEventListener("click", e=>{ if(e.target.id === "modal") closeModal(); });
+document.addEventListener("keydown", e=>{ if(e.key === "Escape" && !$("#modal").hidden) closeModal(); });
+
+/* パソコンのブラウザでは、そのままダウンロードで保存する。
+   iPhone/iPadはダウンロードの扱いが不安定、Claudeのページ内はダウンロード自体が使えないので、
+   その場に画像を出して長押し（パソコンは右クリック）で保存してもらう */
+const inClaudePage = !!(window.claude && typeof window.claude.use === "function");
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+  || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const usePanel = inClaudePage || isIOS;
+
+function saveFile(name, data, kind){
+  if(!usePanel){
+    const blob = data instanceof Blob ? data : new Blob([data]);
+    const u = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = u; a.download = name;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(()=> URL.revokeObjectURL(u), 1000);
+    setStatus(name + " を保存しました");
+    return;
+  }
+  if(kind === "image") showImageToSave(name, data);
+  else showTextToCopy(name, data);
+}
+
+function showImageToSave(name, blob){
+  const img = document.createElement("img");
+  img.src = URL.createObjectURL(blob);
+  img.alt = name;
+  openModal(name,
+    "この画像を長押し（パソコンは右クリック）して保存してください。"
+    + "iPhoneは「“写真”に追加」で保存できます。", img);
+}
+
+async function showTextToCopy(name, blob){
+  const text = await blob.text();
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;flex-direction:column;gap:8px";
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.readOnly = true;
+  const btn = document.createElement("button");
+  btn.className = "primary"; btn.type = "button"; btn.textContent = "コピー";
+  btn.addEventListener("click", async ()=>{
+    ta.focus(); ta.select();
+    try{ await navigator.clipboard.writeText(ta.value); btn.textContent = "コピーしました"; }
+    catch(e){ btn.textContent = "全選択しました。Ctrl+C（iPhoneはコピー）で控えてください"; }
+  });
+  const act = document.createElement("div");
+  act.className = "mact"; act.append(btn);
+  wrap.append(ta, act);
+  openModal(name,
+    "この内容をコピーして、メモなどに控えてください。"
+    + "別の端末では「5. データ → テキストから読み込み」に貼り付ければ続きができます。", wrap);
+}
+
+function download(name){
+  cv.toBlob(b=>{
+    if(!b){ alert("画像を書き出せませんでした。キャンバスサイズを確認してください。"); return; }
+    saveFile(name, b, "image");
+  }, "image/png");
+}
+$("#dlFull").addEventListener("click", ()=>{
+  render({withBg:true, withGuide:false, hit:false});
+  download(`提供_${stamp()}.png`);
+  render();
+});
+$("#dlOver").addEventListener("click", ()=>{
+  render({withBg:false, withGuide:false, hit:false});
+  download(`背景01_${stamp()}.png`);
+  render();
+});
+$("#expJson").addEventListener("click", ()=>{
+  saveFile("提供設定_" + stamp() + ".json",
+    new Blob([JSON.stringify(state,null,2)], {type:"application/json"}), "text");
+});
+$("#impText").addEventListener("click", ()=>{
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;flex-direction:column;gap:8px";
+  const ta = document.createElement("textarea");
+  ta.placeholder = "書き出した設定のテキストをここに貼り付けてください";
+  const btn = document.createElement("button");
+  btn.className = "primary"; btn.type = "button"; btn.textContent = "読み込む";
+  btn.addEventListener("click", async ()=>{
+    let parsed;
+    try{ parsed = JSON.parse(ta.value); }
+    catch(e){ alert("設定のテキストとして読み取れませんでした。全体を貼り付けているか確認してください。"); return; }
+    if(!parsed || typeof parsed !== "object"){ alert("設定のテキストとして読み取れませんでした。"); return; }
+    if(!confirm("現在の内容は失われます。読み込みますか？")) return;
+    cancelPendingSave();
+    state = normalizeState(parsed);
+    closeModal();
+    await hydrate(); save();
+    setStatus("設定を読み込みました");
+  });
+  const act = document.createElement("div");
+  act.className = "mact"; act.append(btn);
+  wrap.append(ta, act);
+  openModal("テキストから読み込み",
+    "別の端末で「設定を書き出し」したテキストを貼り付けてください。", wrap);
+});
+$("#cloudPull").addEventListener("click", async ()=>{
+  if(!cloud){ alert("この画面では端末をまたいだ保存は使えません。"); return; }
+  if(!confirm("他の端末で保存された内容を取り込みます。この画面の内容は置き換わります。よろしいですか？")) return;
+  try{
+    const remote = await cloudLoad();
+    if(!remote){ alert("他の端末で保存された内容が見つかりませんでした。"); return; }
+    cancelPendingSave();
+    state = normalizeState(remote);
+    await hydrate(); markCloudSynced();
+    setCloudNote(remote.savedAt);
+    setStatus("他の端末の内容を取り込みました");
+  }catch(e){ alert("取り込めませんでした: " + cloudErrorText(e)); }
+});
+$("#impJson").addEventListener("click", ()=> $("#jsonFile").click());
+$("#jsonFile").addEventListener("change", async e=>{
+  const f = e.target.files[0]; e.target.value = "";
+  if(!f) return;
+  if(!confirm("現在の内容は失われます。設定ファイルを読み込みますか？")) return;
+  try{
+    const s = JSON.parse(await f.text());
+    if(!s || typeof s !== "object") throw new Error("形式が違います");
+    cancelPendingSave();
+    state = normalizeState(s);
+    await hydrate(); save();
+    setStatus("設定を読み込みました");
+  }catch(err){ alert("読み込めませんでした: " + err.message); }
+});
+$("#clearItems").addEventListener("click", async ()=>{
+  if(!state.items.length) return;
+  if(!confirm(`リスナー${state.items.length}人をすべて消します。背景と設定は残ります。よろしいですか？`)) return;
+  cancelPendingSave();
+  state.items = []; iconCache.clear(); reseq();
+  render(); renderList(); save();
+});
+$("#clearAll").addEventListener("click", async ()=>{
+  if(!confirm("リスナー・背景・段階設定をすべて初期状態に戻します。よろしいですか？")) return;
+  cancelPendingSave();
+  state = defaultState(); bgImg = null; iconCache.clear();
+  try{ await DB.del("state"); }catch(e){}
+  $("#bgFile").value = ""; $("#banner").classList.remove("on");
+  await hydrate();
+  save();
+});
+
+/* ============================================================
+   状態の正規化 / 移行
+   ============================================================ */
+function normalizeState(s){
+  const d = defaultState();
+  const base = defaultTiers()[0];
+  const legacyColors = num(s && s.v, SCHEMA) < 4;
+  const out = {
+    ...d, ...s, v: SCHEMA,
+    canvas: {...d.canvas, ...(s && s.canvas || {})},
+    area:   {...d.area,   ...(s && s.area   || {})},
+    tiers:  (Array.isArray(s && s.tiers) && s.tiers.length)
+              ? s.tiers.map((t,i) => {
+                  const m = {...base, ...t};
+                  delete m.pillBorder; delete m.pillFill;   /* 旧「名前枠／名前地」は廃止 */
+                  if(legacyColors){
+                    /* v3以前の色はパルムのランク色に入れ替える。数値設定はそのまま残す */
+                    const dt = d.tiers[Math.min(i, d.tiers.length-1)];
+                    ["ring","outline","text","badge","badgeBorder","star"].forEach(k => m[k] = dt[k]);
+                    m.ow = dt.ow;
+                  }
+                  return m;
+                })
+              : d.tiers,
+    items:  (Array.isArray(s && s.items) ? s.items : []).map((it,i) => ({
+              ...newItem(), ...it, seq: num(it && it.seq, i)
+            })),
+  };
+  ["w","h"].forEach(k => out.canvas[k] = clamp(num(out.canvas[k], d.canvas[k]), 16, 20000));
+  ["x","y","w","h"].forEach(k => out.area[k] = num(out.area[k], d.area[k]));
+  out.baseIcon = clamp(num(out.baseIcon, d.baseIcon), 8, 4000);
+  out.rowGap   = num(out.rowGap, d.rowGap);
+  out.colGap   = num(out.colGap, d.colGap);
+  out.tiers.forEach(t=>{
+    if(!t.outline) t.outline = t.ring || "#ffffff";
+    Object.entries(TIER_SPEC).forEach(([k,[lo,hi,dv]])=>{ t[k] = clamp(num(t[k], dv), lo, hi); });
+  });
+  out.items.forEach(it=>{
+    it.badge = clamp(num(it.badge, 3), BADGE_MIN, BADGE_MAX);
+    it.scale = Number.isFinite(it.scale) ? clamp(it.scale, 0.02, 20) : null;
+    it.on = it.on !== false;
+    if(it.off) it.off = { x:num(it.off.x,0), y:num(it.off.y,0) };
+  });
+  return out;
+}
+
+/* ============================================================
+   起動
+   ============================================================ */
+async function hydrate(){
+  if(!state.tiers || !state.tiers.length) state.tiers = defaultTiers();
+  sortTiers();
+  state.items.forEach((it,i)=>{ if(!Number.isFinite(it.seq)) it.seq = i; });
+  seqCounter = state.items.length + 1;
+
+  bgImg = null;
+  if(state.bg){ try{ bgImg = await loadImage(state.bg); }catch(e){ state.bg = null; } }
+
+  iconCache.clear();
+  await Promise.all(state.items.map(async it=>{
+    if(it.icon){ try{ iconCache.set(it.id, await loadImage(it.icon)); }catch(e){} }
+  }));
+
+  validateFont();
+  syncControls(); renderTiers(); renderList(); render();
+}
+
+async function probeStorage(){
+  try{ await DB.set("__probe", 1); await DB.del("__probe"); return true; }
+  catch(e){ return false; }
+}
+
+(async function init(){
+  wireControls();
+  initCloud();
+
+  storageOK = await probeStorage();
+  let hadSaved = false;
+
+  /* まず他の端末と共有している内容を見に行く */
+  let remote = null;
+  try{ remote = await cloudLoad(); }catch(e){ console.warn(e); }
+  setCloudNote(remote && remote.savedAt);
+  if(!storageOK && !cloud){
+    showBanner("⚠ このブラウザでは自動保存が使えません。閉じると作業内容は消えます。"
+      + "作業の区切りごとに「5. データ → 設定を書き出し」でファイルに保存してください。");
+  }
+  if(remote){
+    state = normalizeState(remote);
+    hadSaved = true;
+  }
+  else if(storageOK){
+    try{
+      const saved = await DB.get("state");
+      if(saved && typeof saved === "object"){
+        hadSaved = true;
+        const v = num(saved.v, 0);
+        if(v > SCHEMA){
+          /* 新しい版で保存されたデータ。上書きせず退避して既定で起動する */
+          try{ await DB.set("state_backup_v" + v, saved); }catch(e){}
+          showBanner("⚠ このファイルより新しい版で保存された設定が見つかりました。"
+            + "上書きしないよう読み込みを見送り、バックアップを取りました。");
+          hadSaved = false;
+        } else {
+          state = normalizeState(saved);   /* v1/v2 もそのまま取り込める */
+        }
+      }
+    }catch(e){
+      showBanner("⚠ 保存データを読み込めませんでした（" + (e && e.name || e) + "）。");
+    }
+  }
+
+  /* デモは「保存が使えて、かつ保存データが無い」ときだけ。消したデモが復活しない */
+  if((storageOK || cloud) && !hadSaved && state.items.length === 0){
+    [["Luke",5.00],["相談屋",4.60],["竜ちぇる。",4.10],["ぴ",3.80],
+     ["笑桜のくるみ",3.80],["ひで坊",3.20],["PON君",3.20],["蒼氷のりり",3.20],
+     ["べいくん",3.10],["硝煙のベーコン",3.00],["startend",3.00],["未来（ミク）",3.00],["宵風",3.00]]
+      .forEach(([n,b],i)=>{ const it = newItem(); it.name = n; it.badge = b; it.seq = i; state.items.push(it); });
+    setStatus("サンプルを表示しています。「5. データ → リスナーを全消去」で空にできます");
+  }
+  await hydrate();
+  markCloudSynced();
+  if(state.items.length) fitToArea();
+})();
+</script>
+</body>
+</html>
