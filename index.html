@@ -32,7 +32,9 @@
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--ink);
     font:13px/1.55 "Yu Gothic UI","Meiryo",system-ui,sans-serif;overflow:hidden}
-  #app{display:flex;height:100vh}
+  [hidden]{display:none!important}
+  /* iPhoneのSafariは100vhが下のツールバーに隠れるので dvh を使う */
+  #app{display:flex;height:100vh;height:100dvh}
 
   #side{width:540px;min-width:340px;flex:0 0 auto;background:var(--panel);
     border-right:1px solid var(--line);display:flex;flex-direction:column}
@@ -89,8 +91,44 @@
   .thumb.has{border-style:solid}
   .thumb.drop{border-color:var(--accent);background-color:var(--tint)}
   .item .fields{display:flex;flex-direction:column;gap:6px;min-width:0}
-  .item .ctl{display:flex;flex-direction:column;gap:4px}
-  .tag{font-size:10px;color:var(--accentInk);background:var(--accent);border-radius:4px;padding:1px 5px;text-align:center}
+  .item .ctl{display:flex;flex-direction:column;gap:6px;grid-column:4;grid-row:1}
+  .item .order{display:flex;flex-direction:column;gap:3px}
+  .item .order .btns{display:flex;gap:3px}
+  .item .order .btns button{flex:1;padding:2px 0}
+  .cap{font-size:10px;color:var(--sub);line-height:1.2}
+
+  /* 位置の微調整（自動で並べた場所からのずれ） */
+  .item .pos{grid-column:1/-1;grid-row:2;display:flex;align-items:center;flex-wrap:wrap;
+    gap:8px 12px;padding-top:8px;border-top:1px dashed var(--line)}
+  .pad{--nud:30px;display:grid;grid-template-columns:repeat(3,var(--nud));
+    grid-template-rows:repeat(2,var(--nud));gap:3px;flex:0 0 auto}
+  .nud{width:var(--nud);height:var(--nud);padding:0;display:grid;place-items:center;
+    font-size:15px;line-height:1;font-weight:700;
+    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+  .nud:active{background:var(--tint);border-color:var(--accent);color:var(--accent)}
+  .pad [data-dir=up]{grid-column:2;grid-row:1}
+  .pad [data-dir=left]{grid-column:1;grid-row:2}
+  .pad [data-dir=down]{grid-column:2;grid-row:2}
+  .pad [data-dir=right]{grid-column:3;grid-row:2}
+  .xy{display:flex;flex-direction:column;gap:4px}
+  .xy label{display:flex;align-items:center;gap:5px;margin:0;font-size:11px;color:var(--sub)}
+  .xy input{width:76px}
+  .xy input.moved{border-color:var(--accent);color:var(--accent);font-weight:700}
+  .step{display:flex;align-items:center;gap:6px;margin:0;font-size:11px;color:var(--sub)}
+  .step select{width:auto}
+
+  /* プレビューの下：選んだ人を見ながら動かすバー */
+  #nudgeBar{position:relative;flex:0 0 auto;display:flex;align-items:center;
+    padding:8px 14px;padding-bottom:max(8px, env(safe-area-inset-bottom));
+    background:var(--panel);border-top:1px solid var(--line)}
+  /* 選ぶ前と後でバーの高さが変わるとプレビューが揺れるので、操作部の場所は常に確保しておく */
+  #nbHint{position:absolute;inset:0;margin:0;display:flex;align-items:center;padding:8px 14px}
+  #nbCtl{display:flex;align-items:center;gap:12px;width:100%}
+  #nbCtl.idle{visibility:hidden}
+  .nbInfo{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+  #nbWho{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #nbXY{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+  .nbBtns{display:flex;flex-direction:column;gap:4px}
   #dropAll{border:2px dashed var(--line);border-radius:9px;padding:10px;text-align:center;
     color:var(--sub);font-size:11px;margin-bottom:8px}
   #dropAll.drop{border-color:var(--accent);background:var(--tint);color:var(--accent)}
@@ -156,8 +194,19 @@
     input[type=text],input[type=number],select{font-size:16px;padding:7px}
     .item{grid-template-columns:22px 54px 1fr;gap:7px}
     .item .on{padding-top:16px}
-    .item .ctl{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
+    .item .ctl{grid-column:1/-1;grid-row:3;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
     .item .ctl>*{flex:0 0 auto}
+    .item .order{flex-direction:row;align-items:center;gap:6px}
+    .item .order .btns button{width:40px;padding:6px 0}
+    /* 指で押しやすい大きさにする */
+    .pad{--nud:38px}
+    .nud{font-size:18px}
+    /* 「位置を戻す」が折り返して「削除」の真上に来ないよう、1行に収める */
+    .item .pos{gap:8px 10px}
+    .xy input{width:62px}
+    #nudgeBar{padding:8px 10px;padding-bottom:max(8px, env(safe-area-inset-bottom))}
+    #nbHint{padding:8px 10px}
+    #nbCtl{gap:10px}
     .item .g3{grid-template-columns:1fr 1fr}
     .g4{grid-template-columns:1fr 1fr}
     .g6{grid-template-columns:repeat(3,1fr)}
@@ -222,7 +271,7 @@
         <input type="text" id="fontCustom" placeholder='例: "源ノ角ゴシック JP", sans-serif'>
       </div>
       <label class="inline" style="margin-top:10px"><input type="checkbox" id="showGuide"> 配置エリアのガイド枠を表示（書き出しには入りません）</label>
-      <p class="hint">プレビュー上でアイコンをドラッグすると、その1件だけ位置を手動で動かせます。「位置戻す」で自動配置に戻ります。</p>
+      <p class="hint">プレビュー上で人物をドラッグしても位置を動かせます。PCは人物をクリックして選んだあと、キーボードの矢印キーでも動かせます（Shiftを押しながらで5倍）。「位置を戻す」で自動で並べた場所に戻ります。</p>
     </div></section>
 
     <section id="secTier" class="closed"><header>3. バッジ段階ごとの大きさ・色</header><div class="body">
@@ -236,6 +285,9 @@
 
     <section id="secList"><header>4. リスナー一覧</header><div class="body">
       <div id="dropAll">ここに画像をまとめてドロップすると、人数分のリスナーをまとめて追加します</div>
+      <div class="row" style="margin-bottom:8px">
+        <label class="step">位置の矢印1回で動く量 <select class="stepSel"></select></label>
+      </div>
       <div id="items"></div>
       <div class="row" style="margin-top:10px">
         <button class="primary" id="addItem">＋ リスナーを追加</button>
@@ -243,6 +295,9 @@
         <button class="mini" id="resetPos" style="flex:0 0 auto">位置調整を全リセット</button>
       </div>
       <p class="hint">左端のチェックを外した人は画像に出ませんが、一覧には残ります。翌月また出すときはチェックを戻すだけです。</p>
+      <p class="hint">位置は各リスナーの矢印（↑↓←→）で動かせます。押し続けると連続で動きます。
+      数字は自動で並べた場所からのずれで、横は＋で右、縦は＋で下です。
+      プレビューで人物をタップ（クリック）すると、プレビューの下のバーからも動かせます。スマホは見ながら調整できるのでこちらが便利です。</p>
     </div></section>
 
     <section id="secData" class="closed"><header>5. データ</header><div class="body">
@@ -281,6 +336,26 @@
       <span id="status"></span>
     </div>
     <div id="stage"><div id="wrap"><canvas id="cv"></canvas></div></div>
+    <div id="nudgeBar">
+      <p class="hint" id="nbHint">人物をタップ（クリック）すると、ここで位置を上下左右に動かせます。</p>
+      <div id="nbCtl" class="idle">
+        <div class="pad" role="group" aria-label="位置を動かす">
+          <button type="button" class="nud" data-dir="up" aria-label="上へ">↑</button>
+          <button type="button" class="nud" data-dir="left" aria-label="左へ">←</button>
+          <button type="button" class="nud" data-dir="down" aria-label="下へ">↓</button>
+          <button type="button" class="nud" data-dir="right" aria-label="右へ">→</button>
+        </div>
+        <div class="nbInfo">
+          <b id="nbWho">&nbsp;</b>
+          <span id="nbXY">&nbsp;</span>
+          <label class="step">1回で <select class="stepSel"></select></label>
+        </div>
+        <div class="nbBtns">
+          <button type="button" class="mini" id="nbReset" hidden>位置を戻す</button>
+          <button type="button" class="mini" id="nbClose">選択を解除</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 <div id="modal" hidden>
@@ -338,6 +413,7 @@ function defaultState(){
     font:'"Yu Gothic UI","Meiryo",sans-serif',
     fontWeight:"700",
     showGuide:true,
+    nudgeStep:5,
     tiers:defaultTiers(),
     items:[]
   };
@@ -753,8 +829,8 @@ function drawItem(c, node){
 
 function render(opts){
   opts = opts || {};
-  const withBg    = opts.withBg    !== false;
-  const withGuide = opts.withGuide !== false && state.showGuide;
+  const withBg  = opts.withBg !== false;
+  const preview = opts.withGuide !== false;     /* 書き出し以外＝画面表示用 */
 
   const w = clamp(Math.round(num(state.canvas.w, 930)), 1, 20000);
   const h = clamp(Math.round(num(state.canvas.h, 1962)), 1, 20000);
@@ -767,12 +843,27 @@ function render(opts){
   const nodes = layout();
   nodes.forEach(n => drawItem(ctx, n));
 
-  if(withGuide){
-    ctx.save();
-    ctx.setLineDash([10,8]); ctx.lineWidth = 2; ctx.strokeStyle = "rgba(123,79,214,.85)";
-    ctx.strokeRect(num(state.area.x,0), num(state.area.y,0),
-                   num(state.area.w,0), num(state.area.h,0));
-    ctx.restore();
+  if(preview){
+    /* 縮小表示でも線が消えないよう、画面上で見える太さにそろえる */
+    const ds = cv.clientWidth ? cv.clientWidth / cv.width : 0.4;
+    const px = v => v / ds;
+    if(state.showGuide){
+      ctx.save();
+      ctx.setLineDash([px(6), px(5)]); ctx.lineWidth = px(1.5); ctx.strokeStyle = "rgba(123,79,214,.85)";
+      ctx.strokeRect(num(state.area.x,0), num(state.area.y,0),
+                     num(state.area.w,0), num(state.area.h,0));
+      ctx.restore();
+    }
+    const sel = selectedId && nodes.find(n => n.it.id === selectedId);
+    if(sel){
+      const p = px(5), r = [sel.x - p, sel.y - p, sel.m.w + p*2, sel.m.h + p*2];
+      ctx.save();
+      ctx.lineWidth = px(4); ctx.strokeStyle = "rgba(255,255,255,.9)";
+      ctx.strokeRect(r[0], r[1], r[2], r[3]);
+      ctx.setLineDash([px(6), px(4)]); ctx.lineWidth = px(2); ctx.strokeStyle = "#7b4fd6";
+      ctx.strokeRect(r[0], r[1], r[2], r[3]);
+      ctx.restore();
+    }
   }
   if(opts.hit !== false){ lastNodes = nodes; checkWarnings(nodes); updateTierCounts(); }
   applyZoom();
@@ -889,7 +980,7 @@ function endDrag(ev){
   if(drag){
     const moved = drag.moved;
     drag = null; cv.className = "grab";
-    if(moved){ render(); renderList(); save(); }
+    if(moved){ render(); save(); }
   }
   if(ev) try{ cv.releasePointerCapture(ev.pointerId); }catch(e){}
 }
@@ -899,8 +990,11 @@ cv.addEventListener("pointermove", ev=>{
     const dx = p.x - drag.start.x, dy = p.y - drag.start.y;
     if(!drag.moved && Math.hypot(dx,dy) < DRAG_THRESHOLD) return;
     drag.moved = true;
-    drag.it.off = { x: drag.base.x + dx, y: drag.base.y + dy };
+    setOff(drag.it, drag.base.x + dx, drag.base.y + dy);
     render({hit:false});
+    const row = rowOf(drag.it);
+    if(row) syncPos(row, drag.it);
+    updateNudgeBar();
     return;
   }
   cv.className = hit(toCanvas(ev)) ? "grab" : "";
@@ -934,13 +1028,27 @@ function badgeOptions(){
   return f;
 }
 /* 選択の切り替えだけで一覧を作り直さない */
-function setSelected(id){
-  selectedId = id;
+function markSelected(){
   $("#items").querySelectorAll(".item").forEach(el =>
-    el.classList.toggle("sel", el.__item && el.__item.id === id));
-  const cur = [...$("#items").children].find(el => el.__item && el.__item.id === id);
-  if(cur) cur.scrollIntoView({block:"nearest"});
+    el.classList.toggle("sel", !!el.__item && el.__item.id === selectedId));
+}
+function setSelected(id, opts){
+  selectedId = id;
+  markSelected();
+  if(id && !(opts && opts.noScroll)){
+    const cur = rowOf(state.items.find(x => x.id === id));
+    if(cur) cur.scrollIntoView({block:"nearest"});
+  }
   render();
+  updateNudgeBar();
+}
+/* 描き直しは呼び出し側に任せる軽い版。選択が変わったら true */
+function selectQuiet(id){
+  if(selectedId === id) return false;
+  selectedId = id;
+  markSelected();
+  updateNudgeBar();
+  return true;
 }
 
 const ITEM_HTML = `
@@ -956,14 +1064,29 @@ const ITEM_HTML = `
       <div><label>倍率</label><input type="number" step="0.01" min="0.05" data-act="scale"></div>
     </div>
   </div>
-  <div class="ctl">
-    <div class="row" style="gap:3px">
-      <button class="mini" data-act="up">↑</button>
-      <button class="mini" data-act="down">↓</button>
+  <div class="pos">
+    <div class="pad" role="group" aria-label="位置を動かす">
+      <button type="button" class="nud" data-dir="up" aria-label="上へ">↑</button>
+      <button type="button" class="nud" data-dir="left" aria-label="左へ">←</button>
+      <button type="button" class="nud" data-dir="down" aria-label="下へ">↓</button>
+      <button type="button" class="nud" data-dir="right" aria-label="右へ">→</button>
     </div>
-    <button class="mini" data-act="reset">位置戻す</button>
-    <button class="mini del" data-act="del">削除</button>
-    <span class="tag" data-act="tag" hidden>位置調整済</span>
+    <div class="xy">
+      <span class="cap">位置</span>
+      <label>横 <input type="number" step="1" data-act="offx"> px</label>
+      <label>縦 <input type="number" step="1" data-act="offy"> px</label>
+    </div>
+    <button type="button" class="mini" data-act="reset" hidden>位置を戻す</button>
+  </div>
+  <div class="ctl">
+    <div class="order" hidden>
+      <span class="cap">順番</span>
+      <div class="btns">
+        <button type="button" class="mini" data-act="up" aria-label="順番を1つ前へ">▲</button>
+        <button type="button" class="mini" data-act="down" aria-label="順番を1つ後ろへ">▼</button>
+      </div>
+    </div>
+    <button type="button" class="mini del" data-act="del">削除</button>
   </div>`;
 
 function renderList(){
@@ -981,6 +1104,7 @@ function renderList(){
     el.addEventListener("input",  e=>onItemInput(e, it, el));
     el.addEventListener("change", e=>onItemInput(e, it, el));
     el.addEventListener("click",  e=>onItemClick(e, it));
+    el.addEventListener("focusin", ()=>{ if(selectQuiet(it.id)) render(); });
     const th = el.querySelector(".thumb");
     th.addEventListener("dragover",  e=>{ e.preventDefault(); th.classList.add("drop"); });
     th.addEventListener("dragleave", ()=> th.classList.remove("drop"));
@@ -994,36 +1118,38 @@ function renderList(){
 function syncItemRow(el, it, idx, manual){
   const {t} = tierOf(it.badge);
   const q = s => el.querySelector(s);
+  /* 入力中の欄は書き換えない（カーソルが飛ばないように） */
+  const setVal = (inp, v) => { if(document.activeElement !== inp) inp.value = v; };
   el.classList.toggle("sel", it.id === selectedId);
   el.classList.toggle("off", it.on === false);
   q("[data-act=on]").checked = it.on !== false;
-  q("[data-act=name]").value = it.name || "";
+  setVal(q("[data-act=name]"), it.name || "");
   q("[data-act=badge]").value = String(num(it.badge, 3));
   q("[data-act=scaleMode]").value = it.scale == null ? "auto" : "manual";
   const sc = q("[data-act=scale]");
-  sc.value = num(it.scale ?? t.scale, 1).toFixed(2);
+  setVal(sc, num(it.scale ?? t.scale, 1).toFixed(2));
   sc.disabled = it.scale == null;
-  q("[data-act=up]").disabled   = !manual || idx === 0;
-  q("[data-act=down]").disabled = !manual || idx === state.items.length-1;
-  q("[data-act=up]").title = q("[data-act=down]").title =
-    manual ? "順番を入れ替える" : "並び順を「リストの順番」にすると使えます";
-  q("[data-act=reset]").disabled = !it.off;
-  q("[data-act=tag]").hidden = !it.off;
+  /* 順番の入れ替えは「リストの順番」で並べるときだけ意味があるので、そのときだけ出す */
+  q(".order").hidden = !manual;
+  q("[data-act=up]").disabled   = idx <= 0;
+  q("[data-act=down]").disabled = idx >= state.items.length - 1;
+  syncPos(el, it);
   const th = q(".thumb");
   th.classList.toggle("has", !!it.icon);
-  th.style.backgroundImage = it.icon ? `url("${it.icon}")` : "";
-  th.textContent = it.icon ? "" : "画像";
+  if(th.__icon !== it.icon){            /* 大きな画像文字列を毎回入れ直さない */
+    th.__icon = it.icon;
+    th.style.backgroundImage = it.icon ? `url("${it.icon}")` : "";
+    th.textContent = it.icon ? "" : "画像";
+  }
 }
 function refreshRow(it){
-  const manual = state.sortMode === "manual";
-  const idx = state.items.indexOf(it);
-  const el = [...$("#items").children].find(e => e.__item === it);
-  if(el) syncItemRow(el, it, idx, manual);
+  const el = rowOf(it);
+  if(el) syncItemRow(el, it, state.items.indexOf(it), state.sortMode === "manual");
 }
 function onItemInput(e, it, el){
   const a = e.target.dataset.act;
   if(a === "name"){ it.name = e.target.value; render(); save(); }
-  else if(a === "on"){ it.on = e.target.checked; el.classList.toggle("off", !it.on); render(); save(); }
+  else if(a === "on"){ it.on = e.target.checked; el.classList.toggle("off", !it.on); render(); updateNudgeBar(); save(); }
   else if(a === "badge"){
     it.badge = clamp(num(parseFloat(e.target.value), 3), BADGE_MIN, BADGE_MAX);
     render(); refreshRow(it); save();
@@ -1037,12 +1163,24 @@ function onItemInput(e, it, el){
     if(!Number.isFinite(v) || v <= 0) return;       /* 空欄・入力途中は無視 */
     it.scale = clamp(v, 0.02, 20); render(); save();
   }
+  else if(a === "offx" || a === "offy"){
+    const v = parseFloat(e.target.value);
+    const off = it.off || {x:0, y:0};
+    if(!Number.isFinite(v)){
+      /* 空欄のまま確定したら元の数字に戻す */
+      if(e.type === "change") e.target.value = String(Math.round(num(a === "offx" ? off.x : off.y, 0)));
+      return;
+    }
+    if(a === "offx") setOff(it, v, off.y); else setOff(it, off.x, v);
+    selectQuiet(it.id);
+    render(); syncPos(el, it); updateNudgeBar(); save();
+  }
 }
 function onItemClick(e, it){
   const a = e.target.dataset.act;
   if(a === "pick"){ pickIconFor = it; $("#iconPicker").value = ""; $("#iconPicker").click(); }
   else if(a === "del")   deleteItem(it);
-  else if(a === "reset"){ it.off = null; render(); refreshRow(it); save(); }
+  else if(a === "reset") resetPos(it);
   else if(a === "up" || a === "down"){
     const idx = state.items.indexOf(it);
     const to = idx + (a === "up" ? -1 : 1);
@@ -1056,7 +1194,8 @@ function deleteItem(it){
   if(idx < 0) return;
   const img = iconCache.get(it.id);
   state.items.splice(idx,1); iconCache.delete(it.id); reseq();
-  render(); renderList(); save();
+  if(selectedId === it.id) selectedId = null;
+  render(); renderList(); updateNudgeBar(); save();
   setStatus(`「${it.name || "名前なし"}」を削除しました`, {
     label:"元に戻す",
     run(){
@@ -1067,6 +1206,152 @@ function deleteItem(it){
   });
 }
 function reseq(){ state.items.forEach((it,i)=> it.seq = i); seqCounter = state.items.length; }
+
+/* ============================================================
+   位置の調整（1人ずつ、上下左右）
+   ずれは「自動で並べた場所」からの差を、キャンバスの px で持つ
+   ============================================================ */
+const DIRS = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
+const STEP_OPTIONS = [1, 2, 5, 10, 20, 50];
+
+function rowOf(it){
+  if(!it) return null;
+  return [...$("#items").children].find(e => e.__item === it) || null;
+}
+function setOff(it, x, y){
+  x = clamp(Math.round(num(x, 0)), -20000, 20000);
+  y = clamp(Math.round(num(y, 0)), -20000, 20000);
+  it.off = (x || y) ? {x, y} : null;
+}
+function nudge(it, dir, mult){
+  const d = DIRS[dir];
+  if(!it || !d) return;
+  const s = num(state.nudgeStep, 5) * (mult || 1);
+  const off = it.off || {x:0, y:0};
+  setOff(it, num(off.x,0) + d[0]*s, num(off.y,0) + d[1]*s);
+  selectQuiet(it.id);
+  render();
+  const row = rowOf(it);
+  if(row) syncPos(row, it);
+  updateNudgeBar();
+  save();
+}
+function resetPos(it){
+  if(!it) return;
+  it.off = null;
+  render();
+  const row = rowOf(it);
+  if(row) syncPos(row, it);
+  updateNudgeBar();
+  save();
+}
+function syncPos(el, it){
+  const off = it.off || {x:0, y:0};
+  const x = Math.round(num(off.x,0)), y = Math.round(num(off.y,0));
+  const ix = el.querySelector("[data-act=offx]"), iy = el.querySelector("[data-act=offy]");
+  if(document.activeElement !== ix) ix.value = String(x);
+  if(document.activeElement !== iy) iy.value = String(y);
+  ix.classList.toggle("moved", x !== 0);
+  iy.classList.toggle("moved", y !== 0);
+  el.querySelector("[data-act=reset]").hidden = !it.off;
+}
+
+/* プレビュー下のバー */
+function selectedItem(){
+  return state.items.find(x => x.id === selectedId && x.on !== false) || null;
+}
+function fmtOff(v){
+  const n = Math.round(num(v, 0));
+  return n > 0 ? "+" + n : n < 0 ? "−" + Math.abs(n) : "0";
+}
+function updateNudgeBar(){
+  const it = selectedItem();
+  $("#nbHint").hidden = !!it;
+  $("#nbCtl").classList.toggle("idle", !it);
+  if(!it) return;
+  $("#nbWho").textContent = it.name || "（名前なし）";
+  const off = it.off || {x:0, y:0};
+  $("#nbXY").textContent = "横 " + fmtOff(off.x) + "px ／ 縦 " + fmtOff(off.y) + "px";
+  $("#nbReset").hidden = !it.off;
+}
+$("#nbReset").addEventListener("click", ()=> resetPos(selectedItem()));
+$("#nbClose").addEventListener("click", ()=> setSelected(null, {noScroll:true}));
+
+/* 1回で動く量（一覧とバーの2か所にあるので揃える） */
+function initStepSelects(){
+  document.querySelectorAll(".stepSel").forEach(sel=>{
+    sel.textContent = "";
+    STEP_OPTIONS.forEach(v=>{
+      const o = document.createElement("option");
+      o.value = String(v); o.textContent = v + "px";
+      sel.append(o);
+    });
+    sel.addEventListener("change", e=>{
+      const v = parseFloat(e.target.value);
+      state.nudgeStep = STEP_OPTIONS.includes(v) ? v : 5;
+      syncStepSelects(); save();
+    });
+  });
+}
+function syncStepSelects(){
+  document.querySelectorAll(".stepSel").forEach(sel=>{ sel.value = String(num(state.nudgeStep, 5)); });
+}
+
+/* 矢印ボタン：押して離したら1回、押し続けたら連続。
+   一覧をスクロールしようとした指では動かさない（スクロールが始まると取り消される） */
+function bindRepeat(root, selector, onStep){
+  let hold = null, rep = null, active = null, repeated = false, lastPtr = 0;
+  const stop = ()=>{ clearTimeout(hold); clearInterval(rep); hold = rep = null; active = null; };
+  root.addEventListener("pointerdown", e=>{
+    const b = e.target.closest(selector);
+    if(!b || !root.contains(b) || b.disabled) return;
+    if(e.pointerType === "mouse" && e.button !== 0) return;
+    lastPtr = Date.now();
+    stop();
+    active = b; repeated = false;
+    hold = setTimeout(()=>{
+      if(active !== b) return;
+      repeated = true;
+      onStep(b);
+      rep = setInterval(()=>{ if(active === b) onStep(b); else stop(); }, 70);
+    }, 400);
+  });
+  const finish = e=>{
+    if(!active) return;
+    const b = active, wasRepeat = repeated;
+    stop();
+    if(e.type !== "pointerup" || wasRepeat) return;
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    if(under && under.closest(selector) === b) onStep(b);
+  };
+  window.addEventListener("pointerup", finish);
+  window.addEventListener("pointercancel", finish);
+  root.addEventListener("click", e=>{
+    const b = e.target.closest(selector);
+    if(!b || !root.contains(b)) return;
+    if(Date.now() - lastPtr < 1000) return;   /* 指やマウスではもう動かした */
+    onStep(b);                                /* キーボード（Enter / Space）で押したとき */
+  });
+  root.addEventListener("contextmenu", e=>{ if(e.target.closest(selector)) e.preventDefault(); });
+}
+bindRepeat($("#items"), ".nud", b=>{
+  const row = b.closest(".item");
+  nudge(row && row.__item, b.dataset.dir);
+});
+bindRepeat($("#nudgeBar"), ".nud", b=> nudge(selectedItem(), b.dataset.dir));
+
+/* PC：人物を選んだあと矢印キーで動かす（Shiftで5倍）。Escで選択を解除 */
+document.addEventListener("keydown", e=>{
+  if(!$("#modal").hidden) return;
+  const t = e.target, tag = ((t && t.tagName) || "").toLowerCase();
+  if(tag === "input" || tag === "select" || tag === "textarea" || (t && t.isContentEditable)) return;
+  if(e.key === "Escape"){ if(selectedId) setSelected(null, {noScroll:true}); return; }
+  const dir = {ArrowUp:"up", ArrowDown:"down", ArrowLeft:"left", ArrowRight:"right"}[e.key];
+  const it = dir && selectedItem();
+  if(!it) return;
+  e.preventDefault();
+  nudge(it, dir, e.shiftKey ? 5 : 1);
+});
 
 let pickIconFor = null;
 $("#iconPicker").addEventListener("change", async e=>{
@@ -1108,7 +1393,7 @@ $("#iconPickerMulti").addEventListener("change", e=> addFromFiles(e.target.files
 $("#addItem").addEventListener("click", ()=>{
   const it = newItem();
   state.items.push(it); reseq(); selectedId = it.id;
-  render(); renderList(); save();
+  render(); renderList(); updateNudgeBar(); save();
   const last = $("#items").lastElementChild;
   if(last) last.querySelector("[data-act=name]").focus();
 });
@@ -1116,7 +1401,7 @@ $("#resetPos").addEventListener("click", ()=>{
   if(!state.items.some(it=>it.off)) return;
   if(!confirm("手動で動かした位置をすべて自動配置に戻します。よろしいですか？")) return;
   state.items.forEach(it => it.off = null);
-  render(); renderList(); save();
+  render(); renderList(); updateNudgeBar(); save();
 });
 
 /* ============================================================
@@ -1259,12 +1544,14 @@ function syncControls(){
   $("#sortMode").value = state.sortMode;
   $("#fontWeight").value = state.fontWeight;
   $("#showGuide").checked = !!state.showGuide;
+  syncStepSelects();
   const opt = [...$("#fontSel").options].find(o => o.value === state.font);
   if(opt){ $("#fontSel").value = opt.value; $("#fontCustomWrap").style.display = "none"; }
   else { $("#fontSel").value = "__custom"; $("#fontCustomWrap").style.display = "block";
          $("#fontCustom").value = state.font; }
 }
 function wireControls(){
+  initStepSelects();
   bindNum("#cvW", ()=>state.canvas.w, v=>state.canvas.w=v, 16, 20000);
   bindNum("#cvH", ()=>state.canvas.h, v=>state.canvas.h=v, 16, 20000);
   bindNum("#arX", ()=>state.area.x, v=>state.area.x=v, -20000, 20000);
@@ -1276,7 +1563,13 @@ function wireControls(){
   bindNum("#colGap", ()=>state.colGap, v=>state.colGap=v, -500, 2000);
 
   $("#sortMode").addEventListener("change", e=>{
-    state.sortMode = e.target.value; render(); renderList(); save();
+    const next = e.target.value;
+    if(next === "manual" && state.sortMode !== "manual"){
+      /* 今の画像の並び（バッジの高い順）をそのまま一覧の順番にしてから手動にする */
+      state.items.sort((a,b)=> num(b.badge,0) - num(a.badge,0) || num(a.seq,0) - num(b.seq,0));
+      reseq();
+    }
+    state.sortMode = next; render(); renderList(); save();
   });
   $("#fontWeight").addEventListener("change", e=>{
     state.fontWeight = e.target.value; validateFont(); render(); save();
@@ -1501,13 +1794,13 @@ $("#clearItems").addEventListener("click", async ()=>{
   if(!state.items.length) return;
   if(!confirm(`リスナー${state.items.length}人をすべて消します。背景と設定は残ります。よろしいですか？`)) return;
   cancelPendingSave();
-  state.items = []; iconCache.clear(); reseq();
-  render(); renderList(); save();
+  state.items = []; iconCache.clear(); reseq(); selectedId = null;
+  render(); renderList(); updateNudgeBar(); save();
 });
 $("#clearAll").addEventListener("click", async ()=>{
   if(!confirm("リスナー・背景・段階設定をすべて初期状態に戻します。よろしいですか？")) return;
   cancelPendingSave();
-  state = defaultState(); bgImg = null; iconCache.clear();
+  state = defaultState(); bgImg = null; iconCache.clear(); selectedId = null;
   try{ await DB.del("state"); }catch(e){}
   $("#bgFile").value = ""; $("#banner").classList.remove("on");
   await hydrate();
@@ -1547,6 +1840,7 @@ function normalizeState(s){
   out.baseIcon = clamp(num(out.baseIcon, d.baseIcon), 8, 4000);
   out.rowGap   = num(out.rowGap, d.rowGap);
   out.colGap   = num(out.colGap, d.colGap);
+  out.nudgeStep = STEP_OPTIONS.includes(num(out.nudgeStep, 5)) ? num(out.nudgeStep, 5) : 5;
   out.tiers.forEach(t=>{
     if(!t.outline) t.outline = t.ring || "#ffffff";
     Object.entries(TIER_SPEC).forEach(([k,[lo,hi,dv]])=>{ t[k] = clamp(num(t[k], dv), lo, hi); });
@@ -1555,7 +1849,10 @@ function normalizeState(s){
     it.badge = clamp(num(it.badge, 3), BADGE_MIN, BADGE_MAX);
     it.scale = Number.isFinite(it.scale) ? clamp(it.scale, 0.02, 20) : null;
     it.on = it.on !== false;
-    if(it.off) it.off = { x:num(it.off.x,0), y:num(it.off.y,0) };
+    if(it.off){
+      const x = Math.round(num(it.off.x,0)), y = Math.round(num(it.off.y,0));
+      it.off = (x || y) ? {x, y} : null;
+    }
   });
   return out;
 }
@@ -1579,6 +1876,7 @@ async function hydrate(){
 
   validateFont();
   syncControls(); renderTiers(); renderList(); render();
+  updateNudgeBar();
 }
 
 async function probeStorage(){
