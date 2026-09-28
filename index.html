@@ -372,7 +372,7 @@
 <script>
 "use strict";
 
-const BADGE_MIN = 1.0, BADGE_MAX = 5.0;
+const BADGE_MIN = 1.0, BADGE_MAX = 5.9;
 const $ = s => document.querySelector(s);
 const cv = $("#cv"), ctx = cv.getContext("2d");
 /* 計測専用の ctx。描画用 ctx のフォント状態を汚さない */
@@ -392,7 +392,7 @@ function defaultTiers(){
     ring:c, outline:c, text:"#ffffff", badge:c, badgeBorder:"#ffffff", star
   });
   return [
-    T("★5.0",   5.00, 1.00, 2, "row", 0.27, -1.24, 0.65, "#f5a623", "#ffe14d"),
+    T("★5.0〜", 5.00, 1.00, 2, "row", 0.27, -1.24, 0.65, "#f5a623", "#ffe14d"),
     T("★4.5〜", 4.50, 0.81, 2, "row", 0.28, -1.45, 0.80, "#e8583c", "#ff9f1c"),
     T("★4.0〜", 4.00, 0.79, 1, "row", 0.26,  0.10, 0.02, "#e8583c", "#c9c9c9"),
     T("★3.5〜", 3.50, 0.42, 1, "row", 0.32,  0.28, 0.00, "#ff7bc0", "#ffe14d"),
@@ -1822,6 +1822,7 @@ function normalizeState(s){
               ? s.tiers.map((t,i) => {
                   const m = {...base, ...t};
                   delete m.pillBorder; delete m.pillFill;   /* 旧「名前枠／名前地」は廃止 */
+                  if(m.label === "★5.0") m.label = "★5.0〜";   /* バッジが5.9まで広がったので */
                   if(legacyColors){
                     /* v3以前の色はパルムのランク色に入れ替える。数値設定はそのまま残す */
                     const dt = d.tiers[Math.min(i, d.tiers.length-1)];
