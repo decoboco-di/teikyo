@@ -100,35 +100,11 @@
   /* 位置の微調整（自動で並べた場所からのずれ） */
   .item .pos{grid-column:1/-1;grid-row:2;display:flex;align-items:center;flex-wrap:wrap;
     gap:8px 12px;padding-top:8px;border-top:1px dashed var(--line)}
-  .pad{--nud:30px;display:grid;grid-template-columns:repeat(3,var(--nud));
-    grid-template-rows:repeat(2,var(--nud));gap:3px;flex:0 0 auto}
-  .nud{width:var(--nud);height:var(--nud);padding:0;display:grid;place-items:center;
-    font-size:15px;line-height:1;font-weight:700;
-    user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
-  .nud:active{background:var(--tint);border-color:var(--accent);color:var(--accent)}
-  .pad [data-dir=up]{grid-column:2;grid-row:1}
-  .pad [data-dir=left]{grid-column:1;grid-row:2}
-  .pad [data-dir=down]{grid-column:2;grid-row:2}
-  .pad [data-dir=right]{grid-column:3;grid-row:2}
-  .xy{display:flex;flex-direction:column;gap:4px}
+  .xy{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}
+  .xy .cap{font-size:11px}
   .xy label{display:flex;align-items:center;gap:5px;margin:0;font-size:11px;color:var(--sub)}
   .xy input{width:76px}
   .xy input.moved{border-color:var(--accent);color:var(--accent);font-weight:700}
-  .step{display:flex;align-items:center;gap:6px;margin:0;font-size:11px;color:var(--sub)}
-  .step select{width:auto}
-
-  /* プレビューの下：選んだ人を見ながら動かすバー */
-  #nudgeBar{position:relative;flex:0 0 auto;display:flex;align-items:center;
-    padding:8px 14px;padding-bottom:max(8px, env(safe-area-inset-bottom));
-    background:var(--panel);border-top:1px solid var(--line)}
-  /* 選ぶ前と後でバーの高さが変わるとプレビューが揺れるので、操作部の場所は常に確保しておく */
-  #nbHint{position:absolute;inset:0;margin:0;display:flex;align-items:center;padding:8px 14px}
-  #nbCtl{display:flex;align-items:center;gap:12px;width:100%}
-  #nbCtl.idle{visibility:hidden}
-  .nbInfo{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
-  #nbWho{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #nbXY{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
-  .nbBtns{display:flex;flex-direction:column;gap:4px}
   #dropAll{border:2px dashed var(--line);border-radius:9px;padding:10px;text-align:center;
     color:var(--sub);font-size:11px;margin-bottom:8px}
   #dropAll.drop{border-color:var(--accent);background:var(--tint);color:var(--accent)}
@@ -198,15 +174,10 @@
     .item .ctl>*{flex:0 0 auto}
     .item .order{flex-direction:row;align-items:center;gap:6px}
     .item .order .btns button{width:40px;padding:6px 0}
-    /* 指で押しやすい大きさにする */
-    .pad{--nud:38px}
-    .nud{font-size:18px}
     /* 「位置を戻す」が折り返して「削除」の真上に来ないよう、1行に収める */
     .item .pos{gap:8px 10px}
-    .xy input{width:62px}
-    #nudgeBar{padding:8px 10px;padding-bottom:max(8px, env(safe-area-inset-bottom))}
-    #nbHint{padding:8px 10px}
-    #nbCtl{gap:10px}
+    .xy{gap:6px 10px}
+    .xy input{width:58px}
     .item .g3{grid-template-columns:1fr 1fr}
     .g4{grid-template-columns:1fr 1fr}
     .g6{grid-template-columns:repeat(3,1fr)}
@@ -270,8 +241,13 @@
       <div id="fontCustomWrap" style="margin-top:6px;display:none">
         <input type="text" id="fontCustom" placeholder='例: "源ノ角ゴシック JP", sans-serif'>
       </div>
+      <div style="margin-top:8px"><label>名前とバッジ</label><select id="labelLayout">
+        <option value="row">横並び（名前の右にバッジ）</option>
+        <option value="stack">縦2段（名前の下にバッジ・中央揃え）</option>
+      </select></div>
+      <p class="hint">縦2段では、アイコンの真下に名前とバッジを中央揃えで並べます。切り替えると、配置エリアに収まるよう大きさを自動で合わせます。「3. バッジ段階ごとの大きさ・色」の「1行」の人数と名前X%・名前Y%は、横並びと縦2段で別々に覚えます（縦2段の名前Y%はアイコンとのすき間、名前X%は左右のずれ）。</p>
       <label class="inline" style="margin-top:10px"><input type="checkbox" id="showGuide"> 配置エリアのガイド枠を表示（書き出しには入りません）</label>
-      <p class="hint">プレビュー上で人物をドラッグしても位置を動かせます。PCは人物をクリックして選んだあと、キーボードの矢印キーでも動かせます（Shiftを押しながらで5倍）。「位置を戻す」で自動で並べた場所に戻ります。</p>
+      <p class="hint">プレビュー上で人物をドラッグすると位置を動かせます。PCは人物をクリックして選んだあと、キーボードの矢印キーでも1pxずつ動かせます（Shiftを押しながらで10pxずつ）。「位置を戻す」で自動で並べた場所に戻ります。</p>
     </div></section>
 
     <section id="secTier" class="closed"><header>3. バッジ段階ごとの大きさ・色</header><div class="body">
@@ -285,9 +261,6 @@
 
     <section id="secList"><header>4. リスナー一覧</header><div class="body">
       <div id="dropAll">ここに画像をまとめてドロップすると、人数分のリスナーをまとめて追加します</div>
-      <div class="row" style="margin-bottom:8px">
-        <label class="step">位置の矢印1回で動く量 <select class="stepSel"></select></label>
-      </div>
       <div id="items"></div>
       <div class="row" style="margin-top:10px">
         <button class="primary" id="addItem">＋ リスナーを追加</button>
@@ -295,9 +268,8 @@
         <button class="mini" id="resetPos" style="flex:0 0 auto">位置調整を全リセット</button>
       </div>
       <p class="hint">左端のチェックを外した人は画像に出ませんが、一覧には残ります。翌月また出すときはチェックを戻すだけです。</p>
-      <p class="hint">位置は各リスナーの矢印（↑↓←→）で動かせます。押し続けると連続で動きます。
-      数字は自動で並べた場所からのずれで、横は＋で右、縦は＋で下です。
-      プレビューで人物をタップ（クリック）すると、プレビューの下のバーからも動かせます。スマホは見ながら調整できるのでこちらが便利です。</p>
+      <p class="hint">位置はプレビューで人物をドラッグするか、各リスナーの「横」「縦」に数字を入れて動かせます。
+      数字は自動で並べた場所からのずれで、横は＋で右、縦は＋で下です。</p>
     </div></section>
 
     <section id="secData" class="closed"><header>5. データ</header><div class="body">
@@ -336,26 +308,6 @@
       <span id="status"></span>
     </div>
     <div id="stage"><div id="wrap"><canvas id="cv"></canvas></div></div>
-    <div id="nudgeBar">
-      <p class="hint" id="nbHint">人物をタップ（クリック）すると、ここで位置を上下左右に動かせます。</p>
-      <div id="nbCtl" class="idle">
-        <div class="pad" role="group" aria-label="位置を動かす">
-          <button type="button" class="nud" data-dir="up" aria-label="上へ">↑</button>
-          <button type="button" class="nud" data-dir="left" aria-label="左へ">←</button>
-          <button type="button" class="nud" data-dir="down" aria-label="下へ">↓</button>
-          <button type="button" class="nud" data-dir="right" aria-label="右へ">→</button>
-        </div>
-        <div class="nbInfo">
-          <b id="nbWho">&nbsp;</b>
-          <span id="nbXY">&nbsp;</span>
-          <label class="step">1回で <select class="stepSel"></select></label>
-        </div>
-        <div class="nbBtns">
-          <button type="button" class="mini" id="nbReset" hidden>位置を戻す</button>
-          <button type="button" class="mini" id="nbClose">選択を解除</button>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 <div id="modal" hidden>
@@ -387,18 +339,20 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
    ============================================================ */
 function defaultTiers(){
   /* 色は参考画像のバッジから読み取った値。★2.0 / ★1.0 は実物を確認できていない仮の色 */
-  const T = (label,min,scale,cols,flow,fs,lx,ly,c,star)=>({
-    label,min,scale,cols,flow,fs,lx,ly,ow:0.22,
+  /* cols/lx/ly は横並びのとき、vcols/vx/vy は縦2段のときの値
+     （縦2段の vx＝アイコン中心からの左右ずれ、vy＝アイコン下とのすき間） */
+  const T = (label,min,scale,cols,vcols,flow,fs,lx,ly,c,star)=>({
+    label,min,scale,cols,vcols,flow,fs,lx,ly,vx:0,vy:0,ow:0.22,
     ring:c, outline:c, text:"#ffffff", badge:c, badgeBorder:"#ffffff", star
   });
   return [
-    T("★5.0〜", 5.00, 1.00, 2, "row", 0.27, -1.24, 0.65, "#f5a623", "#ffe14d"),
-    T("★4.5〜", 4.50, 0.81, 2, "row", 0.28, -1.45, 0.80, "#e8583c", "#ff9f1c"),
-    T("★4.0〜", 4.00, 0.79, 1, "row", 0.26,  0.10, 0.02, "#e8583c", "#c9c9c9"),
-    T("★3.5〜", 3.50, 0.42, 1, "row", 0.32,  0.28, 0.00, "#ff7bc0", "#ffe14d"),
-    T("★3.0〜", 3.00, 0.29, 2, "col", 0.35,  0.15, 0.00, "#ff7bc0", "#ffe14d"),
-    T("★2.0〜", 2.00, 0.26, 2, "col", 0.35,  0.15, 0.00, "#4cc38a", "#ffe14d"),
-    T("★1.0〜", 1.00, 0.24, 2, "col", 0.35,  0.15, 0.00, "#7aa7e8", "#ffe14d"),
+    T("★5.0〜", 5.00, 1.00, 2, 2, "row", 0.27, -1.24, 0.65, "#f5a623", "#ffe14d"),
+    T("★4.5〜", 4.50, 0.81, 2, 2, "row", 0.28, -1.45, 0.80, "#e8583c", "#ff9f1c"),
+    T("★4.0〜", 4.00, 0.79, 1, 3, "row", 0.26,  0.10, 0.02, "#e8583c", "#c9c9c9"),
+    T("★3.5〜", 3.50, 0.42, 1, 3, "row", 0.32,  0.28, 0.00, "#ff7bc0", "#ffe14d"),
+    T("★3.0〜", 3.00, 0.29, 2, 4, "col", 0.35,  0.15, 0.00, "#ff7bc0", "#ffe14d"),
+    T("★2.0〜", 2.00, 0.26, 2, 4, "col", 0.35,  0.15, 0.00, "#4cc38a", "#ffe14d"),
+    T("★1.0〜", 1.00, 0.24, 2, 4, "col", 0.35,  0.15, 0.00, "#7aa7e8", "#ffe14d"),
   ];
 }
 const SCHEMA = 4;
@@ -413,14 +367,15 @@ function defaultState(){
     font:'"Yu Gothic UI","Meiryo",sans-serif',
     fontWeight:"700",
     showGuide:true,
-    nudgeStep:5,
+    labelLayout:"row",          /* "row"＝名前とバッジを横並び / "stack"＝縦2段・中央揃え */
     tiers:defaultTiers(),
     items:[]
   };
 }
 /* 数値項目の [最小, 最大, 既定] */
-const TIER_SPEC = { min:[BADGE_MIN,BADGE_MAX,1], scale:[0.02,20,1], cols:[1,12,1],
-                    fs:[0.02,3,0.28], lx:[-6,6,0.1], ly:[-6,6,0], ow:[0,1,0.22] };
+const TIER_SPEC = { min:[BADGE_MIN,BADGE_MAX,1], scale:[0.02,20,1], cols:[1,12,1], vcols:[1,12,2],
+                    fs:[0.02,3,0.28], lx:[-6,6,0.1], ly:[-6,6,0],
+                    vx:[-6,6,0], vy:[-6,6,0], ow:[0,1,0.22] };
 
 let state = defaultState();
 let bgImg = null;
@@ -695,26 +650,45 @@ function metrics(it){
   /* 名前は枠なしの縁取り文字。占有幅は文字幅＋縁の太さぶんだけ */
   const pillH = nameFS * 1.30 + strokeW;
   const pillW = label ? nameW + strokeW : 0;
-  const gapNB = label ? icon * 0.06 : 0;
   const chipH = badgeFS * 1.90, starR = badgeFS * 0.66;
   const chipW = badgeFS*0.5 + starR*2 + badgeFS*0.34 + numW + badgeFS*0.55;
 
-  const pillX = icon * (1 + num(t.lx, 0.1));
-  const chipX = pillX + pillW + gapNB;
-  const cy    = icon/2 + num(t.ly, 0) * icon;
-  const labelH = Math.max(pillH, chipH);
+  /* 名前とバッジのかたまり（lb）の位置と大きさ。アイコンの左上を原点にする */
+  let lbX, lbY, lbW, lbH, nameX, nameCY, chipX, chipCY;
+  if(state.labelLayout === "stack"){
+    /* 縦2段：名前の下にバッジ。どちらもアイコンの中心線にそろえる */
+    const gapV = label ? nameFS * 0.10 : 0;
+    const mid = icon/2 + num(t.vx, 0) * icon;
+    lbW = Math.max(pillW, chipW);
+    lbH = (label ? pillH + gapV : 0) + chipH;
+    lbX = mid - lbW/2;
+    lbY = icon + num(t.vy, 0) * icon;
+    nameX = mid - pillW/2;  nameCY = lbY + pillH/2;
+    chipX = mid - chipW/2;  chipCY = lbY + lbH - chipH/2;
+  } else {
+    /* 横並び：名前の右にバッジ */
+    const gapNB = label ? icon * 0.06 : 0;
+    const cy = icon/2 + num(t.ly, 0) * icon;
+    lbX = icon * (1 + num(t.lx, 0.1));
+    lbW = pillW + gapNB + chipW;
+    lbH = Math.max(pillH, chipH);
+    lbY = cy - lbH/2;
+    nameX = lbX;                 nameCY = cy;
+    chipX = lbX + pillW + gapNB; chipCY = cy;
+  }
 
-  const ox = Math.max(0, -pillX);
-  const oy = Math.max(0, -(cy - labelH/2));
+  /* 左や上にはみ出した分だけアイコンをずらし、全体の左上を (0,0) にする */
+  const ox = Math.max(0, -lbX), oy = Math.max(0, -lbY);
 
   return {
     icon, nameFS, badgeFS, strokeW, starR, label,
     ox, oy,
-    pillX: ox + pillX, pillW, pillH,
-    chipX: ox + chipX, chipW, chipH,
-    cy: oy + cy,
-    w: ox + Math.max(icon, chipX + chipW),
-    h: oy + Math.max(icon, cy + labelH/2),
+    pillW, pillH, chipW, chipH,
+    nameX: ox + nameX, nameCY: oy + nameCY,
+    chipX: ox + chipX, chipCY: oy + chipCY,
+    lbX: ox + lbX, lbY: oy + lbY, lbW, lbH,
+    w: ox + Math.max(icon, lbX + lbW),
+    h: oy + Math.max(icon, lbY + lbH),
     t
   };
 }
@@ -728,11 +702,13 @@ function layout(){
     items.sort((a,b)=> num(b.badge,0) - num(a.badge,0) || num(a.seq,0) - num(b.seq,0));
   }
 
+  const stack = state.labelLayout === "stack";
+
   /* 1) 行に詰める。段が変わったら必ず行を切るので、1行には同じ段の人だけが並ぶ */
   const rows = [];
   for(let i=0;i<items.length;){
     const ti  = tierOf(items[i].badge).i;
-    const cap = clamp(Math.round(num(state.tiers[ti].cols, 1)) || 1, 1, 12);
+    const cap = clamp(Math.round(num(state.tiers[ti][stack ? "vcols" : "cols"], 1)) || 1, 1, 12);
     const chunk = [];
     while(chunk.length < cap && i < items.length && tierOf(items[i].badge).i === ti) chunk.push(items[i++]);
     rows.push({ cap, tier: ti, items: chunk });
@@ -764,10 +740,16 @@ function layout(){
   let y = ay;
   rows.forEach(r=>{
     const colW = (aw - cg*(r.cap-1)) / r.cap;
+    /* 縦2段は中央揃えの見た目なので、各人をマスの真ん中に置く。
+       「横に流す」段で人数が1行に満たないときは、その行ごと真ん中に寄せる */
+    const lead = stack && state.tiers[r.tier].flow !== "col"
+      ? (r.cap - r.items.length) * (colW + cg) / 2 : 0;
     let rowH = 0, prevRight = -Infinity;
     r.items.forEach((it, ci)=>{
       const m = metrics(it);
-      const x = Math.max(ax + ci*(colW + cg), prevRight + cg);
+      const cell = ax + lead + ci*(colW + cg);
+      const want = stack ? Math.max(ax, cell + (colW - m.w)/2) : cell;
+      const x = Math.max(want, prevRight + cg);
       prevRight = x + m.w;
       const off = it.off || {x:0,y:0};
       out.push({ it, m, x: x + num(off.x,0), y: y + num(off.y,0) });
@@ -797,10 +779,8 @@ function drawItem(c, node){
   c.lineWidth = ringW; c.strokeStyle = t.ring;
   c.beginPath(); c.arc(cx, icy, r, 0, Math.PI*2); c.stroke();
 
-  const cy = y + m.cy;
-
   if(m.label){
-    const tx = x + m.pillX + m.strokeW/2, ty = cy + m.nameFS*0.04;
+    const tx = x + m.nameX + m.strokeW/2, ty = y + m.nameCY + m.nameFS*0.04;
     setFont(c, m.nameFS);
     c.textBaseline = "middle"; c.textAlign = "left";
     if(m.strokeW > 0){
@@ -812,6 +792,7 @@ function drawItem(c, node){
     c.fillText(m.label, tx, ty);
   }
 
+  const cy = y + m.chipCY;
   const gx = x + m.chipX, gy = cy - m.chipH/2;
   roundRect(c, gx, gy, m.chipW, m.chipH, m.chipH*0.34);
   c.fillStyle = t.badge; c.fill();
@@ -970,9 +951,8 @@ function hit(p){
     const n = lastNodes[i], m = n.m;
     const cx = n.x+m.ox+m.icon/2, cy = n.y+m.oy+m.icon/2;
     if((p.x-cx)**2 + (p.y-cy)**2 <= (m.icon/2)**2) return n;   /* アイコンの円 */
-    const ly = n.y+m.cy, lh = Math.max(m.pillH, m.chipH)/2;
-    if(p.x >= n.x+m.pillX && p.x <= n.x+m.chipX+m.chipW &&
-       p.y >= ly-lh && p.y <= ly+lh) return n;                 /* 名前＋バッジの帯 */
+    const lx = n.x+m.lbX, ly = n.y+m.lbY;
+    if(p.x >= lx && p.x <= lx+m.lbW && p.y >= ly && p.y <= ly+m.lbH) return n;   /* 名前＋バッジ */
   }
   return null;
 }
@@ -994,7 +974,6 @@ cv.addEventListener("pointermove", ev=>{
     render({hit:false});
     const row = rowOf(drag.it);
     if(row) syncPos(row, drag.it);
-    updateNudgeBar();
     return;
   }
   cv.className = hit(toCanvas(ev)) ? "grab" : "";
@@ -1040,14 +1019,12 @@ function setSelected(id, opts){
     if(cur) cur.scrollIntoView({block:"nearest"});
   }
   render();
-  updateNudgeBar();
 }
 /* 描き直しは呼び出し側に任せる軽い版。選択が変わったら true */
 function selectQuiet(id){
   if(selectedId === id) return false;
   selectedId = id;
   markSelected();
-  updateNudgeBar();
   return true;
 }
 
@@ -1065,12 +1042,6 @@ const ITEM_HTML = `
     </div>
   </div>
   <div class="pos">
-    <div class="pad" role="group" aria-label="位置を動かす">
-      <button type="button" class="nud" data-dir="up" aria-label="上へ">↑</button>
-      <button type="button" class="nud" data-dir="left" aria-label="左へ">←</button>
-      <button type="button" class="nud" data-dir="down" aria-label="下へ">↓</button>
-      <button type="button" class="nud" data-dir="right" aria-label="右へ">→</button>
-    </div>
     <div class="xy">
       <span class="cap">位置</span>
       <label>横 <input type="number" step="1" data-act="offx"> px</label>
@@ -1149,7 +1120,7 @@ function refreshRow(it){
 function onItemInput(e, it, el){
   const a = e.target.dataset.act;
   if(a === "name"){ it.name = e.target.value; render(); save(); }
-  else if(a === "on"){ it.on = e.target.checked; el.classList.toggle("off", !it.on); render(); updateNudgeBar(); save(); }
+  else if(a === "on"){ it.on = e.target.checked; el.classList.toggle("off", !it.on); render(); save(); }
   else if(a === "badge"){
     it.badge = clamp(num(parseFloat(e.target.value), 3), BADGE_MIN, BADGE_MAX);
     render(); refreshRow(it); save();
@@ -1173,7 +1144,7 @@ function onItemInput(e, it, el){
     }
     if(a === "offx") setOff(it, v, off.y); else setOff(it, off.x, v);
     selectQuiet(it.id);
-    render(); syncPos(el, it); updateNudgeBar(); save();
+    render(); syncPos(el, it); save();
   }
 }
 function onItemClick(e, it){
@@ -1195,7 +1166,7 @@ function deleteItem(it){
   const img = iconCache.get(it.id);
   state.items.splice(idx,1); iconCache.delete(it.id); reseq();
   if(selectedId === it.id) selectedId = null;
-  render(); renderList(); updateNudgeBar(); save();
+  render(); renderList(); save();
   setStatus(`「${it.name || "名前なし"}」を削除しました`, {
     label:"元に戻す",
     run(){
@@ -1208,12 +1179,9 @@ function deleteItem(it){
 function reseq(){ state.items.forEach((it,i)=> it.seq = i); seqCounter = state.items.length; }
 
 /* ============================================================
-   位置の調整（1人ずつ、上下左右）
+   位置の調整（1人ずつ）
    ずれは「自動で並べた場所」からの差を、キャンバスの px で持つ
    ============================================================ */
-const DIRS = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
-const STEP_OPTIONS = [1, 2, 5, 10, 20, 50];
-
 function rowOf(it){
   if(!it) return null;
   return [...$("#items").children].find(e => e.__item === it) || null;
@@ -1223,17 +1191,14 @@ function setOff(it, x, y){
   y = clamp(Math.round(num(y, 0)), -20000, 20000);
   it.off = (x || y) ? {x, y} : null;
 }
-function nudge(it, dir, mult){
-  const d = DIRS[dir];
-  if(!it || !d) return;
-  const s = num(state.nudgeStep, 5) * (mult || 1);
+function nudge(it, dx, dy){
+  if(!it) return;
   const off = it.off || {x:0, y:0};
-  setOff(it, num(off.x,0) + d[0]*s, num(off.y,0) + d[1]*s);
+  setOff(it, num(off.x,0) + dx, num(off.y,0) + dy);
   selectQuiet(it.id);
   render();
   const row = rowOf(it);
   if(row) syncPos(row, it);
-  updateNudgeBar();
   save();
 }
 function resetPos(it){
@@ -1242,7 +1207,6 @@ function resetPos(it){
   render();
   const row = rowOf(it);
   if(row) syncPos(row, it);
-  updateNudgeBar();
   save();
 }
 function syncPos(el, it){
@@ -1255,102 +1219,22 @@ function syncPos(el, it){
   iy.classList.toggle("moved", y !== 0);
   el.querySelector("[data-act=reset]").hidden = !it.off;
 }
-
-/* プレビュー下のバー */
 function selectedItem(){
   return state.items.find(x => x.id === selectedId && x.on !== false) || null;
 }
-function fmtOff(v){
-  const n = Math.round(num(v, 0));
-  return n > 0 ? "+" + n : n < 0 ? "−" + Math.abs(n) : "0";
-}
-function updateNudgeBar(){
-  const it = selectedItem();
-  $("#nbHint").hidden = !!it;
-  $("#nbCtl").classList.toggle("idle", !it);
-  if(!it) return;
-  $("#nbWho").textContent = it.name || "（名前なし）";
-  const off = it.off || {x:0, y:0};
-  $("#nbXY").textContent = "横 " + fmtOff(off.x) + "px ／ 縦 " + fmtOff(off.y) + "px";
-  $("#nbReset").hidden = !it.off;
-}
-$("#nbReset").addEventListener("click", ()=> resetPos(selectedItem()));
-$("#nbClose").addEventListener("click", ()=> setSelected(null, {noScroll:true}));
 
-/* 1回で動く量（一覧とバーの2か所にあるので揃える） */
-function initStepSelects(){
-  document.querySelectorAll(".stepSel").forEach(sel=>{
-    sel.textContent = "";
-    STEP_OPTIONS.forEach(v=>{
-      const o = document.createElement("option");
-      o.value = String(v); o.textContent = v + "px";
-      sel.append(o);
-    });
-    sel.addEventListener("change", e=>{
-      const v = parseFloat(e.target.value);
-      state.nudgeStep = STEP_OPTIONS.includes(v) ? v : 5;
-      syncStepSelects(); save();
-    });
-  });
-}
-function syncStepSelects(){
-  document.querySelectorAll(".stepSel").forEach(sel=>{ sel.value = String(num(state.nudgeStep, 5)); });
-}
-
-/* 矢印ボタン：押して離したら1回、押し続けたら連続。
-   一覧をスクロールしようとした指では動かさない（スクロールが始まると取り消される） */
-function bindRepeat(root, selector, onStep){
-  let hold = null, rep = null, active = null, repeated = false, lastPtr = 0;
-  const stop = ()=>{ clearTimeout(hold); clearInterval(rep); hold = rep = null; active = null; };
-  root.addEventListener("pointerdown", e=>{
-    const b = e.target.closest(selector);
-    if(!b || !root.contains(b) || b.disabled) return;
-    if(e.pointerType === "mouse" && e.button !== 0) return;
-    lastPtr = Date.now();
-    stop();
-    active = b; repeated = false;
-    hold = setTimeout(()=>{
-      if(active !== b) return;
-      repeated = true;
-      onStep(b);
-      rep = setInterval(()=>{ if(active === b) onStep(b); else stop(); }, 70);
-    }, 400);
-  });
-  const finish = e=>{
-    if(!active) return;
-    const b = active, wasRepeat = repeated;
-    stop();
-    if(e.type !== "pointerup" || wasRepeat) return;
-    const under = document.elementFromPoint(e.clientX, e.clientY);
-    if(under && under.closest(selector) === b) onStep(b);
-  };
-  window.addEventListener("pointerup", finish);
-  window.addEventListener("pointercancel", finish);
-  root.addEventListener("click", e=>{
-    const b = e.target.closest(selector);
-    if(!b || !root.contains(b)) return;
-    if(Date.now() - lastPtr < 1000) return;   /* 指やマウスではもう動かした */
-    onStep(b);                                /* キーボード（Enter / Space）で押したとき */
-  });
-  root.addEventListener("contextmenu", e=>{ if(e.target.closest(selector)) e.preventDefault(); });
-}
-bindRepeat($("#items"), ".nud", b=>{
-  const row = b.closest(".item");
-  nudge(row && row.__item, b.dataset.dir);
-});
-bindRepeat($("#nudgeBar"), ".nud", b=> nudge(selectedItem(), b.dataset.dir));
-
-/* PC：人物を選んだあと矢印キーで動かす（Shiftで5倍）。Escで選択を解除 */
+/* PC：人物を選んだあと矢印キーで動かす（1px、Shiftで10px）。Escで選択を解除 */
 document.addEventListener("keydown", e=>{
   if(!$("#modal").hidden) return;
   const t = e.target, tag = ((t && t.tagName) || "").toLowerCase();
   if(tag === "input" || tag === "select" || tag === "textarea" || (t && t.isContentEditable)) return;
   if(e.key === "Escape"){ if(selectedId) setSelected(null, {noScroll:true}); return; }
-  const dir = {ArrowUp:"up", ArrowDown:"down", ArrowLeft:"left", ArrowRight:"right"}[e.key];
-  const it = dir && selectedItem();
+  const d = {ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0]}[e.key];
+  const it = d && selectedItem();
   if(!it) return;
   e.preventDefault();
-  nudge(it, dir, e.shiftKey ? 5 : 1);
+  const s = e.shiftKey ? 10 : 1;
+  nudge(it, d[0]*s, d[1]*s);
 });
 
 let pickIconFor = null;
@@ -1393,7 +1277,7 @@ $("#iconPickerMulti").addEventListener("change", e=> addFromFiles(e.target.files
 $("#addItem").addEventListener("click", ()=>{
   const it = newItem();
   state.items.push(it); reseq(); selectedId = it.id;
-  render(); renderList(); updateNudgeBar(); save();
+  render(); renderList(); save();
   const last = $("#items").lastElementChild;
   if(last) last.querySelector("[data-act=name]").focus();
 });
@@ -1401,7 +1285,7 @@ $("#resetPos").addEventListener("click", ()=>{
   if(!state.items.some(it=>it.off)) return;
   if(!confirm("手動で動かした位置をすべて自動配置に戻します。よろしいですか？")) return;
   state.items.forEach(it => it.off = null);
-  render(); renderList(); updateNudgeBar(); save();
+  render(); renderList(); save();
 });
 
 /* ============================================================
@@ -1409,6 +1293,8 @@ $("#resetPos").addEventListener("click", ()=>{
    ============================================================ */
 const NUMS = [["min","この値以上","0.01",1],["scale","倍率","0.01",1],["fs","文字%","1",100],
               ["lx","名前X%","1",100],["ly","名前Y%","1",100],["ow","縁太さ%","1",100]];
+/* 「1行」と名前X%／名前Y% は横並びと縦2段で別の値を持つ。切り替えても、それぞれの調整が残る */
+const posKey = k => state.labelLayout === "stack" ? ({cols:"vcols", lx:"vx", ly:"vy"}[k] || k) : k;
 const COLORS = [["ring","アイコン枠"],["outline","名前の縁"],["text","名前の文字"],
                 ["badge","バッジ地"],["badgeBorder","バッジ枠"],["star","星"]];
 const TIER_HTML = `
@@ -1444,12 +1330,12 @@ function buildTier(t){
   el.addEventListener("input", e=>{
     const k = e.target.dataset.k; if(!k) return;
     if(e.target.type === "number"){
-      const spec = TIER_SPEC[k];
+      const key = posKey(k), spec = TIER_SPEC[key];
       const raw = parseFloat(e.target.value);
       if(!Number.isFinite(raw)){ e.target.classList.add("bad"); return; }  /* 空欄は state に触れない */
       e.target.classList.remove("bad");
       const mul = (NUMS.find(n=>n[0]===k) || [,,,1])[3] || 1;
-      t[k] = spec ? clamp(raw/mul, spec[0], spec[1]) : raw/mul;
+      t[key] = spec ? clamp(raw/mul, spec[0], spec[1]) : raw/mul;
     } else {
       t[k] = e.target.value;
       if(k === "label") el.querySelector(".ttl b").textContent = t.label || "";
@@ -1483,7 +1369,7 @@ function syncTier(el){
   const t = el.__tier;
   NUMS.concat([["cols","","",1]]).forEach(([k,,,mul])=>{
     const inp = el.querySelector(`[data-k="${k}"]`);
-    if(inp) inp.value = String(Math.round(num(t[k], 0) * (mul||1) * 1000)/1000);
+    if(inp) inp.value = String(Math.round(num(t[posKey(k)], 0) * (mul||1) * 1000)/1000);
   });
   el.querySelector('[data-k="flow"]').value = t.flow === "col" ? "col" : "row";
   el.querySelector('[data-k="label"]').value = t.label || "";
@@ -1544,14 +1430,13 @@ function syncControls(){
   $("#sortMode").value = state.sortMode;
   $("#fontWeight").value = state.fontWeight;
   $("#showGuide").checked = !!state.showGuide;
-  syncStepSelects();
+  $("#labelLayout").value = state.labelLayout === "stack" ? "stack" : "row";
   const opt = [...$("#fontSel").options].find(o => o.value === state.font);
   if(opt){ $("#fontSel").value = opt.value; $("#fontCustomWrap").style.display = "none"; }
   else { $("#fontSel").value = "__custom"; $("#fontCustomWrap").style.display = "block";
          $("#fontCustom").value = state.font; }
 }
 function wireControls(){
-  initStepSelects();
   bindNum("#cvW", ()=>state.canvas.w, v=>state.canvas.w=v, 16, 20000);
   bindNum("#cvH", ()=>state.canvas.h, v=>state.canvas.h=v, 16, 20000);
   bindNum("#arX", ()=>state.area.x, v=>state.area.x=v, -20000, 20000);
@@ -1575,6 +1460,12 @@ function wireControls(){
     state.fontWeight = e.target.value; validateFont(); render(); save();
   });
   $("#showGuide").addEventListener("change",  e=>{ state.showGuide = e.target.checked; render(); save(); });
+  $("#labelLayout").addEventListener("change", e=>{
+    state.labelLayout = e.target.value === "stack" ? "stack" : "row";
+    [...$("#tiers").children].forEach(syncTier);   /* 名前X%・Y% を今の並べ方の値で表示し直す */
+    /* 縦2段は1人ぶんが縦に長くなるので、切り替えたら配置エリアに収め直す */
+    if(visibleItems().length) fitToArea(); else { render(); save(); }
+  });
   $("#fontSel").addEventListener("change", e=>{
     if(e.target.value === "__custom"){ $("#fontCustomWrap").style.display = "block"; $("#fontCustom").focus(); }
     else { $("#fontCustomWrap").style.display = "none"; state.font = e.target.value;
@@ -1795,7 +1686,7 @@ $("#clearItems").addEventListener("click", async ()=>{
   if(!confirm(`リスナー${state.items.length}人をすべて消します。背景と設定は残ります。よろしいですか？`)) return;
   cancelPendingSave();
   state.items = []; iconCache.clear(); reseq(); selectedId = null;
-  render(); renderList(); updateNudgeBar(); save();
+  render(); renderList(); save();
 });
 $("#clearAll").addEventListener("click", async ()=>{
   if(!confirm("リスナー・背景・段階設定をすべて初期状態に戻します。よろしいですか？")) return;
@@ -1823,6 +1714,11 @@ function normalizeState(s){
                   const m = {...base, ...t};
                   delete m.pillBorder; delete m.pillFill;   /* 旧「名前枠／名前地」は廃止 */
                   if(m.label === "★5.0") m.label = "★5.0〜";   /* バッジが5.9まで広がったので */
+                  /* 縦2段の「1行」が無い古いデータは、同じバッジ帯の初期値を使う */
+                  if(!Number.isFinite(t && t.vcols)){
+                    const dt = d.tiers.find(x => num(m.min, 1) >= x.min) || d.tiers[d.tiers.length-1];
+                    m.vcols = dt.vcols;
+                  }
                   if(legacyColors){
                     /* v3以前の色はパルムのランク色に入れ替える。数値設定はそのまま残す */
                     const dt = d.tiers[Math.min(i, d.tiers.length-1)];
@@ -1841,7 +1737,8 @@ function normalizeState(s){
   out.baseIcon = clamp(num(out.baseIcon, d.baseIcon), 8, 4000);
   out.rowGap   = num(out.rowGap, d.rowGap);
   out.colGap   = num(out.colGap, d.colGap);
-  out.nudgeStep = STEP_OPTIONS.includes(num(out.nudgeStep, 5)) ? num(out.nudgeStep, 5) : 5;
+  delete out.nudgeStep;          /* 矢印ボタンの「1回で動く量」は廃止 */
+  out.labelLayout = out.labelLayout === "stack" ? "stack" : "row";
   out.tiers.forEach(t=>{
     if(!t.outline) t.outline = t.ring || "#ffffff";
     Object.entries(TIER_SPEC).forEach(([k,[lo,hi,dv]])=>{ t[k] = clamp(num(t[k], dv), lo, hi); });
@@ -1877,7 +1774,6 @@ async function hydrate(){
 
   validateFont();
   syncControls(); renderTiers(); renderList(); render();
-  updateNudgeBar();
 }
 
 async function probeStorage(){
