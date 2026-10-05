@@ -6,126 +6,226 @@
 <title>提供画像メーカー（Palmu）</title>
 <style>
   :root{
-    --bg:#f4f1f8; --panel:#ffffff; --panel2:#faf8fd; --field:#ffffff;
-    --line:#ddd6e6; --ink:#2b2436; --sub:#6d6280;
-    --accent:#7b4fd6; --accentInk:#ffffff; --tint:#f0e9ff;
-    --danger:#c0392b; --dangerBg:#fdecea; --dangerLine:#f0c4be;
+    color-scheme:light;
+    --font-ui:"Yu Gothic UI","Hiragino Sans","Hiragino Kaku Gothic ProN","Meiryo",system-ui,sans-serif;
+    --fs-xs:12px; --fs-sm:13px; --fs-md:14px; --fs-lg:16px; --fs-input:14px;
+    --h-ctl:36px; --h-ctl-sm:28px; --r-sm:6px; --r-md:8px; --r-lg:12px;
+    --shadow-sm:0 1px 2px rgb(34 28 43 / .1); --shadow-lg:0 8px 24px rgb(34 28 43 / .2);
+    --bg:#f6f4f9; --surface:#fff; --surface-2:#f1eef5; --surface-3:#e8e3ef; --field:#fff;
+    --line:#e4dfea; --line-strong:#8a8197; --text:#221c2b; --text-2:#4f475c; --text-3:#6b6378;
+    --accent:#7b4fd6; --accent-hover:#6b40c6; --accent-press:#5b34ad;
+    --accent-text:#6d43cc; --accent-subtle:#f1ebfd; --on-accent:#fff;
+    --danger:#b3261e; --danger-subtle:#fcefee;
+    --toast-bg:#2a2433; --toast-text:#f4f1f8; --toast-action:#cdb8ff;
     --stage:#e9e4f1; --check:#e2e2e2; --checkBg:#ffffff;
+    /* 旧い名前も新しい色を指すように残す */
+    --panel:var(--surface); --panel2:var(--surface-2); --ink:var(--text); --sub:var(--text-2);
+    --tint:var(--accent-subtle); --accentInk:var(--on-accent);
+    --dangerBg:var(--danger-subtle); --dangerLine:var(--line-strong);
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --bg:#1b1723; --panel:#231e2e; --panel2:#2a2436; --field:#1f1a29;
-      --line:#3a3348; --ink:#ece8f4; --sub:#a79cbd;
-      --accent:#a688f0; --accentInk:#1b1723; --tint:#332a48;
-      --danger:#ff8a7a; --dangerBg:#3a2320; --dangerLine:#5a3630;
+      color-scheme:dark;
+      --shadow-sm:0 1px 2px rgb(0 0 0 / .4); --shadow-lg:0 8px 24px rgb(0 0 0 / .5);
+      --bg:#16131c; --surface:#201b29; --surface-2:#2a2434; --surface-3:#352e41; --field:#1a1622;
+      --line:#352e41; --line-strong:#7f7493; --text:#efebf6; --text-2:#c5bdd4; --text-3:#a49bb5;
+      --accent:#a98bf2; --accent-hover:#b9a0f6; --accent-press:#9a78ec;
+      --accent-text:#b9a0f6; --accent-subtle:#2f2647; --on-accent:#16131c;
+      --danger:#ff9488; --danger-subtle:#3a2024;
+      --toast-bg:#efebf6; --toast-text:#201b29; --toast-action:#6d43cc;
       --stage:#15121c; --check:#2a2536; --checkBg:#3a3448;
     }
   }
   :root[data-theme="dark"]{
-      --bg:#1b1723; --panel:#231e2e; --panel2:#2a2436; --field:#1f1a29;
-      --line:#3a3348; --ink:#ece8f4; --sub:#a79cbd;
-      --accent:#a688f0; --accentInk:#1b1723; --tint:#332a48;
-      --danger:#ff8a7a; --dangerBg:#3a2320; --dangerLine:#5a3630;
+      color-scheme:dark;
+      --shadow-sm:0 1px 2px rgb(0 0 0 / .4); --shadow-lg:0 8px 24px rgb(0 0 0 / .5);
+      --bg:#16131c; --surface:#201b29; --surface-2:#2a2434; --surface-3:#352e41; --field:#1a1622;
+      --line:#352e41; --line-strong:#7f7493; --text:#efebf6; --text-2:#c5bdd4; --text-3:#a49bb5;
+      --accent:#a98bf2; --accent-hover:#b9a0f6; --accent-press:#9a78ec;
+      --accent-text:#b9a0f6; --accent-subtle:#2f2647; --on-accent:#16131c;
+      --danger:#ff9488; --danger-subtle:#3a2024;
+      --toast-bg:#efebf6; --toast-text:#201b29; --toast-action:#6d43cc;
       --stage:#15121c; --check:#2a2536; --checkBg:#3a3448;
   }
+  /* スマホは指で押しやすい高さにし、入力欄は16px（iOSの自動拡大を防ぐ） */
+  @media (max-width:860px){
+    :root{ --fs-input:16px; --h-ctl:44px; --h-ctl-sm:36px; }
+  }
+
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:13px/1.55 "Yu Gothic UI","Meiryo",system-ui,sans-serif;overflow:hidden}
-  [hidden]{display:none!important}
   /* iPhoneのSafariは100vhが下のツールバーに隠れるので dvh を使う */
-  #app{display:flex;height:100vh;height:100dvh}
+  body{margin:0;background:var(--bg);color:var(--text);font:var(--fs-md)/1.5 var(--font-ui);
+    overflow:hidden;display:flex;flex-direction:column;height:100vh;height:100dvh}
+  [hidden]{display:none!important}
+  #app{display:flex;flex:1;min-height:0}
+  #banner{display:none;flex:0 0 auto;padding:10px 16px;background:var(--danger-subtle);color:var(--danger);
+    border-bottom:1px solid var(--danger);font-size:var(--fs-sm);font-weight:600}
+  #banner.on{display:block}
 
-  #side{width:540px;min-width:340px;flex:0 0 auto;background:var(--panel);
+  #side{width:540px;min-width:340px;flex:0 0 auto;background:var(--bg);
     border-right:1px solid var(--line);display:flex;flex-direction:column}
-  #sideScroll{overflow-y:auto;padding:14px 16px 60px;flex:1}
+  #sideScroll{overflow-y:auto;padding:16px 16px 80px;flex:1}
   #grip{width:6px;cursor:col-resize;flex:0 0 auto;margin-left:-3px;z-index:5}
   #grip:hover{background:var(--accent)}
 
-  h1{font-size:15px;margin:0}
-  h1 small{font-weight:400;color:var(--sub);font-size:11px;margin-left:6px}
-  section{border:1px solid var(--line);border-radius:10px;margin:12px 0;background:var(--panel)}
-  section>header{padding:8px 12px;font-weight:700;cursor:pointer;user-select:none;
-    display:flex;align-items:center;gap:6px;background:var(--panel2);border-radius:10px 10px 0 0}
-  section>header::before{content:"▼";font-size:9px;color:var(--sub)}
-  section.closed>header::before{content:"▶"}
-  section.closed>header{border-radius:10px}
-  section.closed>.body{display:none}
-  section>.body{padding:10px 12px 14px;border-top:1px solid var(--line)}
+  .apphead{display:flex;align-items:baseline;gap:12px;margin:0 0 16px}
+  h1{font-size:var(--fs-lg);font-weight:700;margin:0}
+  h2{font-size:var(--fs-lg);font-weight:700;margin:0}
+  #saveState{font-size:var(--fs-xs);color:var(--text-3)}
+  #saveState.err{color:var(--danger);font-weight:600}
 
-  label{display:block;font-size:11px;color:var(--sub);margin-bottom:2px}
-  label.inline{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink)}
-  label.inline input{width:auto}
-  input[type=text],input[type=number],select{width:100%;padding:5px 7px;border:1px solid var(--line);
-    border-radius:6px;font:inherit;background:var(--field);color:inherit}
-  input.bad{border-color:var(--danger);background:var(--dangerBg)}
-  input[type=color]{width:100%;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--field)}
-  .row{display:flex;gap:8px}
+  /* ---- 入力欄 ---- */
+  label{display:block;font-size:var(--fs-sm);color:var(--text-2);margin-bottom:4px}
+  label.inline{display:flex;align-items:center;gap:8px;font-size:var(--fs-md);color:var(--text);margin:0}
+  input[type=text],input[type=number],select{width:100%;min-width:0;height:var(--h-ctl);padding:0 10px;
+    border:1px solid var(--line-strong);border-radius:var(--r-md);font:inherit;font-size:var(--fs-input);
+    background-color:var(--field);color:var(--text)}
+  input[type=number]{font-variant-numeric:tabular-nums}
+  select{appearance:none;-webkit-appearance:none;padding-right:30px;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%238a8197' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center;background-size:12px 12px}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  input:disabled,select:disabled{background-color:var(--surface-2);color:var(--text-3);
+    -webkit-text-fill-color:var(--text-3);cursor:default}
+  input.bad{border-color:var(--danger);background-color:var(--danger-subtle)}
+  input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--line-strong);
+    border-radius:var(--r-md);background:var(--field);cursor:pointer}
+  input[type=checkbox]{width:20px;height:20px;margin:0;accent-color:var(--accent);cursor:pointer}
+
+  .row{display:flex;gap:8px;align-items:flex-end}
   .row>*{flex:1;min-width:0}
-  .g2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .g6{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
-  button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:var(--panel);
-    border-radius:7px;cursor:pointer;color:var(--ink)}
-  button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
-  button:disabled{opacity:.4;cursor:default}
-  button.primary{background:var(--accent);border-color:var(--accent);color:var(--accentInk);font-weight:700}
-  button.primary:hover{filter:brightness(1.1);color:var(--accentInk)}
-  button.mini{padding:2px 7px;font-size:11px}
-  button.del{color:var(--danger);border-color:var(--dangerLine)}
-  button.del:hover{background:var(--dangerBg);border-color:var(--danger);color:var(--danger)}
-  .hint{font-size:11px;color:var(--sub);margin:8px 0 0}
-  :is(button,input,select,summary):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 
-  #items{display:flex;flex-direction:column;gap:8px}
-  .item{border:1px solid var(--line);border-radius:9px;padding:8px;display:grid;
-    grid-template-columns:20px 58px 1fr 74px;gap:8px;align-items:start}
-  .item.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(123,79,214,.15)}
-  .item.off{opacity:.45}
-  .item .on{padding-top:20px}
-  .item .on input{width:16px;height:16px}
-  .thumb{width:58px;height:58px;border-radius:50%;border:2px dashed var(--line);
-    background:var(--panel2) center/cover no-repeat;cursor:pointer;display:grid;place-items:center;
-    font-size:10px;color:var(--sub);overflow:hidden}
+  /* ---- ボタン：ふつう＝副、.primary＝主、.del＝危険、.mini＝小、.text＝文字だけ ---- */
+  button{font:inherit;font-size:var(--fs-md);font-weight:600;height:var(--h-ctl);padding:0 16px;
+    border:1px solid var(--line-strong);background:var(--surface);color:var(--text);
+    border-radius:var(--r-md);cursor:pointer;display:inline-flex;align-items:center;
+    justify-content:center;gap:6px;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+  button:hover:not(:disabled){background:var(--surface-2)}
+  button:active:not(:disabled){background:var(--surface-3)}
+  button:disabled{color:var(--text-3);cursor:default}
+  button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+  button.primary:hover:not(:disabled){background:var(--accent-hover);border-color:var(--accent-hover)}
+  button.primary:active:not(:disabled){background:var(--accent-press);border-color:var(--accent-press)}
+  button.primary:disabled{background:var(--surface-3);border-color:var(--surface-3);color:var(--text-3)}
+  button.del{color:var(--danger)}
+  button.del:hover:not(:disabled),button.del:active:not(:disabled){background:var(--danger-subtle);border-color:var(--danger)}
+  button.mini{height:var(--h-ctl-sm);padding:0 10px;font-size:var(--fs-sm);border-radius:var(--r-sm)}
+  button.text{height:var(--h-ctl-sm);padding:0 8px;border-color:transparent;background:transparent;
+    color:var(--text-2);font-size:var(--fs-sm)}
+  button.text:hover:not(:disabled){background:var(--surface-2)}
+  button.accent-line{border-color:var(--accent);color:var(--accent-text)}
+  button.accent-line:hover:not(:disabled){background:var(--accent-subtle)}
+  :is(button,input[type=checkbox],input[type=color],summary):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .hint{font-size:var(--fs-sm);line-height:1.7;color:var(--text-2);margin:8px 0 0}
+  .chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;
+    font-size:var(--fs-xs);font-weight:600;background:var(--surface-2);color:var(--text-2);white-space:nowrap}
+  .cap{font-size:var(--fs-sm);font-weight:600;color:var(--text-2)}
+
+  /* ---- リスナー一覧（1人1行） ---- */
+  .listHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}
+  .listCard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+  .listCols,.item{display:grid;grid-template-columns:36px 44px minmax(0,1fr) 88px 40px;gap:6px;
+    align-items:center;padding:0 8px 0 4px}
+  .listCols{height:30px;font-size:var(--fs-xs);color:var(--text-3);border-bottom:1px solid var(--line);white-space:nowrap}
+  .listCols span:nth-child(-n+2){text-align:center}
+  .item{min-height:52px;padding-top:4px;padding-bottom:4px;border-top:1px solid var(--line)}
+  #items>.item:first-child{border-top:0}
+  #items:empty::after{content:"まだリスナーがいません。下の「＋ リスナーを追加」から追加できます。";
+    display:block;padding:20px 16px;font-size:var(--fs-sm);color:var(--text-3);text-align:center}
+  .listCard:has(#items:empty) .listCols{display:none}
+  .item.sel{background:var(--accent-subtle);box-shadow:inset 3px 0 0 var(--accent)}
+  .item .on{display:grid;place-items:center;width:36px;height:44px;margin:0;cursor:pointer}
+  .item .on input{width:22px;height:22px}
+  .thumb{width:44px;height:44px;border-radius:50%;border:2px dashed var(--ring,var(--line-strong));
+    background:var(--surface-2) center/cover no-repeat;cursor:pointer;display:grid;place-items:center;
+    font-size:var(--fs-xs);color:var(--text-3);overflow:hidden;user-select:none;-webkit-user-select:none}
   .thumb.has{border-style:solid}
-  .thumb.drop{border-color:var(--accent);background-color:var(--tint)}
-  .item .fields{display:flex;flex-direction:column;gap:6px;min-width:0}
-  .item .ctl{display:flex;flex-direction:column;gap:6px;grid-column:4;grid-row:1}
-  .item .order{display:flex;flex-direction:column;gap:3px}
-  .item .order .btns{display:flex;gap:3px}
-  .item .order .btns button{flex:1;padding:2px 0}
-  .cap{font-size:10px;color:var(--sub);line-height:1.2}
-
-  /* 位置の微調整（自動で並べた場所からのずれ） */
-  .item .pos{grid-column:1/-1;grid-row:2;display:flex;align-items:center;flex-wrap:wrap;
-    gap:8px 12px;padding-top:8px;border-top:1px dashed var(--line)}
-  .xy{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}
-  .xy .cap{font-size:11px}
-  .xy label{display:flex;align-items:center;gap:5px;margin:0;font-size:11px;color:var(--sub)}
+  .thumb.drop{border-color:var(--accent);background-color:var(--accent-subtle)}
+  .item.off .thumb{opacity:.4}
+  .item.off [data-act=name]{color:var(--text-3)}
+  .more{position:relative;width:40px;height:44px;padding:0;border:0;background:transparent;border-radius:var(--r-md)}
+  .more::before{content:"";position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-6px 0 0 -5px;
+    border-right:2px solid var(--text-2);border-bottom:2px solid var(--text-2);transform:rotate(45deg)}
+  .more[aria-expanded="true"]::before{margin-top:-2px;transform:rotate(-135deg)}
+  /* 位置か大きさを手で変えた人は ⌄ の右上に点 */
+  .item.tuned .more::after{content:"";position:absolute;top:8px;right:6px;width:7px;height:7px;
+    border-radius:50%;background:var(--accent)}
+  .det{grid-column:2/-1;display:flex;flex-direction:column;gap:12px;padding:6px 0 12px}
+  .detRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+  .fld{display:flex;align-items:center;gap:8px;margin:0;font-size:var(--fs-sm);color:var(--text-2)}
+  .fld select{width:96px}
+  .fld input{width:84px}
+  .xy{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+  .xy label{display:flex;align-items:center;gap:6px;margin:0;font-size:var(--fs-sm);color:var(--text-2)}
   .xy input{width:76px}
-  .xy input.moved{border-color:var(--accent);color:var(--accent);font-weight:700}
-  #dropAll{border:2px dashed var(--line);border-radius:9px;padding:10px;text-align:center;
-    color:var(--sub);font-size:11px;margin-bottom:8px}
-  #dropAll.drop{border-color:var(--accent);background:var(--tint);color:var(--accent)}
+  .xy input.moved{border-color:var(--accent);color:var(--accent-text);font-weight:600}
+  .det .hint{margin:6px 0 0;font-size:var(--fs-xs);line-height:1.5}
+  .order{display:flex;align-items:center;gap:8px}
+  .detFoot{display:flex;justify-content:flex-end;padding-top:8px}
+  .listActs{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .listActs #addItem{flex:1}
+  #resetPos{margin-top:8px}
+  #dropAll{display:none;margin-bottom:8px;padding:16px;border:2px dashed var(--accent);border-radius:var(--r-lg);
+    background:var(--accent-subtle);color:var(--accent-text);font-size:var(--fs-sm);font-weight:600;text-align:center}
+  body.dragfiles #dropAll{display:block}
+  #dropAll.drop{background:var(--surface-3)}
 
-  .tier{border:1px solid var(--line);border-radius:9px;padding:9px;margin-bottom:8px;background:var(--panel2)}
-  .tier .ttl{display:flex;align-items:center;justify-content:space-between;font-size:11px;
-    color:var(--sub);margin-bottom:6px}
-  .tier .sw{font-size:10px}
-  .tier .cnt{margin-left:auto;margin-right:8px;font-size:10px;color:#fff;
-    background:var(--accent);color:var(--accentInk);border-radius:9px;padding:1px 7px}
-  .adv{margin-top:6px}
-  .adv>summary{font-size:11px;color:var(--sub);cursor:pointer;user-select:none}
+  /* ---- 設定（ふだんは閉じたまま） ---- */
+  .groupLabel{margin:28px 0 8px;font-size:var(--fs-xs);font-weight:700;color:var(--text-3)}
+  .settings{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+  .settings>section+section{border-top:1px solid var(--line)}
+  section>header>button{width:100%;min-height:48px;height:auto;padding:0 16px;border:0;border-radius:0;
+    background:transparent;justify-content:space-between;font-size:var(--fs-md);font-weight:700;
+    color:var(--text);text-align:left}
+  section>header>button::after{content:"";flex:0 0 auto;width:8px;height:8px;margin:-4px 4px 0 12px;
+    border-right:2px solid var(--text-2);border-bottom:2px solid var(--text-2);transform:rotate(45deg)}
+  section:not(.closed)>header>button::after{margin-top:4px;transform:rotate(-135deg)}
+  section>header>button:hover:not(:disabled){background:var(--surface-2)}
+  section.closed>.body{display:none}
+  section>.body{padding:4px 16px 16px}
 
+  .bgRow{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+  .actRow{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+
+  .tier{margin-bottom:8px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface)}
+  .tier>summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;
+    cursor:pointer;user-select:none;-webkit-user-select:none}
+  .tier>summary::-webkit-details-marker{display:none}
+  .tier>summary::after{content:"";flex:0 0 auto;width:7px;height:7px;margin:-3px 2px 0 auto;
+    border-right:2px solid var(--text-2);border-bottom:2px solid var(--text-2);transform:rotate(45deg)}
+  .tier[open]>summary::after{margin-top:3px;transform:rotate(-135deg)}
+  .tier .dot{flex:0 0 auto;width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 1px var(--line)}
+  .tier .ttl b{font-size:var(--fs-md)}
+  .tierBody{padding:4px 12px 12px;border-top:1px solid var(--line)}
+  .tgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:8px}
+  .tgrid .span2{grid-column:span 2}
+  .adv{margin-top:12px}
+  .adv>summary{display:flex;align-items:center;min-height:32px;font-size:var(--fs-sm);font-weight:600;
+    color:var(--text-2);cursor:pointer;user-select:none;-webkit-user-select:none}
+  .cgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px;margin-top:8px}
+  .tierFoot{display:flex;justify-content:flex-end;margin-top:12px}
+  .tierActs{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+
+  .btnGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .btnGrid button{height:auto;min-height:var(--h-ctl-sm);padding-top:4px;padding-bottom:4px;
+    white-space:normal;line-height:1.3}
+  .dangerZone{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+
+  /* ---- プレビュー ---- */
   #main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--stage)}
-  #banner{display:none;padding:8px 14px;background:var(--dangerBg);color:var(--danger);
-    border-bottom:1px solid var(--dangerLine);font-size:12px;font-weight:700}
-  #banner.on{display:block}
-  #bar{padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);
-    display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  #bar .sp{flex:1}
-  #stage{flex:1;overflow:auto;display:grid;place-items:center;padding:20px}
+  #bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 16px;
+    background:var(--surface);border-bottom:1px solid var(--line)}
+  .grp-save,.grp-view{display:flex;align-items:center;gap:8px}
+  .grp-view{flex:1}
+  #zoom{width:auto;margin-left:auto}
+  #warnBand{flex:0 0 auto;margin:10px 16px 0;padding:8px 12px;border-radius:var(--r-md);
+    background:var(--danger-subtle);color:var(--danger);font-size:var(--fs-sm);font-weight:600;line-height:1.5}
+  #stage{flex:1;min-height:0;overflow:auto;display:grid;place-items:center;padding:20px}
   #wrap{position:relative;box-shadow:0 6px 30px rgba(0,0,0,.18);
     background-image:linear-gradient(45deg,var(--check) 25%,transparent 25%,transparent 75%,var(--check) 75%),
       linear-gradient(45deg,var(--check) 25%,transparent 25%,transparent 75%,var(--check) 75%),
@@ -133,62 +233,81 @@
     background-size:20px 20px,20px 20px,100% 100%;background-position:0 0,10px 10px,0 0}
   #cv{display:block;touch-action:none}
   #cv.grab{cursor:grab} #cv.grabbing{cursor:grabbing}
-  #warn{font-size:11px;color:var(--danger);font-weight:700;max-width:340px;line-height:1.35}
-  #status{font-size:11px;color:var(--sub);display:flex;align-items:center;gap:6px}
+  /* 選択バーは常に同じ高さで出しておく（出し入れで表示倍率が変わるとドラッグがずれる） */
+  #selBar{flex:0 0 auto;display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;
+    background:var(--surface);border-top:1px solid var(--line);font-size:var(--fs-sm);color:var(--text-2)}
+  #selMsg{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-  /* 書き出しパネル */
-  #modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;
+  /* ---- お知らせ（画面下） ---- */
+  #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+    z-index:300;display:flex;align-items:center;gap:12px;width:max-content;max-width:min(480px,calc(100vw - 32px));
+    min-height:48px;padding:10px 12px 10px 16px;border-radius:var(--r-lg);background:var(--toast-bg);
+    color:var(--toast-text);box-shadow:var(--shadow-lg);font-size:var(--fs-md)}
+  #toastMsg{flex:1;min-width:0}
+  #toastAct{height:32px;padding:0 10px;border:0;background:transparent;color:var(--toast-action);font-weight:700}
+  #toastAct:hover:not(:disabled),#toastAct:active:not(:disabled){background:transparent;text-decoration:underline}
+
+  /* ---- 書き出しパネル ---- */
+  #modal{position:fixed;inset:0;background:rgb(0 0 0 / .55);display:grid;place-items:center;
     z-index:100;padding:16px}
   #modal[hidden]{display:none!important}
-  #modal .sheet{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:14px;width:min(560px,100%);max-height:100%;overflow:auto;
-    display:flex;flex-direction:column;gap:10px}
+  #modal .sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+    padding:16px;width:min(560px,100%);max-height:100%;overflow:auto;
+    display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow-lg)}
   #modal .mhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  #modal .mhead b{font-size:14px}
+  #modal .mhead b{font-size:var(--fs-lg)}
   #modal img{max-width:100%;height:auto;display:block;border:1px solid var(--line);
-    border-radius:8px;background:var(--checkBg)}
+    border-radius:var(--r-md);background:var(--checkBg)}
   #modal textarea{width:100%;min-height:180px;resize:vertical;
     font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;
-    border:1px solid var(--line);border-radius:8px;padding:8px;
-    background:var(--field);color:var(--ink)}
+    border:1px solid var(--line-strong);border-radius:var(--r-md);padding:8px;
+    background:var(--field);color:var(--text)}
   #modal .mact{display:flex;gap:8px}
 
-  /* スマホ・タブレット：横並び2ペインをやめてタブで切り替える */
+  /* ---- スマホ・タブレット：2ペインをやめてタブで切り替える ---- */
   #tabs{display:none;flex:0 0 auto}
+  @media (min-width:861px){
+    #selEdit{display:none!important}
+  }
   @media (max-width:860px){
     #app{flex-direction:column}
     #grip{display:none}
-    #tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--line)}
-    #tabs button{flex:1;border:0;border-bottom:2px solid transparent;border-radius:0;
-      padding:11px 8px;font-weight:700;color:var(--sub);background:var(--panel)}
-    #tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+    #tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--line)}
+    #tabs button{flex:1;height:48px;border:0;border-bottom:3px solid transparent;border-radius:0;
+      background:var(--surface);color:var(--text-2);font-size:var(--fs-md);font-weight:700}
+    #tabs button.on{color:var(--accent-text);border-bottom-color:var(--accent)}
+    #tabs button.alert::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--danger)}
     #side{width:100%!important;min-width:0;border-right:0;flex:1;min-height:0}
     #main{flex:1;min-height:0}
     body.pane-preview #side{display:none}
     body.pane-edit #main{display:none}
-    /* iOSは16px未満の入力欄で勝手に拡大するので大きくする */
-    input[type=text],input[type=number],select{font-size:16px;padding:7px}
-    .item{grid-template-columns:22px 54px 1fr;gap:7px}
-    .item .on{padding-top:16px}
-    .item .ctl{grid-column:1/-1;grid-row:3;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
-    .item .ctl>*{flex:0 0 auto}
-    .item .order{flex-direction:row;align-items:center;gap:6px}
-    .item .order .btns button{width:40px;padding:6px 0}
-    /* 「位置を戻す」が折り返して「削除」の真上に来ないよう、1行に収める */
-    .item .pos{gap:8px 10px}
-    .xy{gap:6px 10px}
-    .xy input{width:58px}
-    .item .g3{grid-template-columns:1fr 1fr}
-    .g4{grid-template-columns:1fr 1fr}
-    .g6{grid-template-columns:repeat(3,1fr)}
-    #bar{padding:6px 10px;gap:6px}
-    #bar button{padding:8px 12px}
-    #stage{padding:10px}
-    #sideScroll{padding:12px 12px 80px}
+    #sideScroll{padding:12px 12px 96px}
+    .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .tgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .tgrid .span2{grid-column:auto}
+    .item{min-height:56px}
+    /* 小さいボタンも、押せる範囲は44pxとる */
+    button.mini{position:relative}
+    button.mini::after{content:"";position:absolute;inset:-4px -2px}
+    /* プレビュー：上に表示の切り替え、下に保存ボタン */
+    #bar{display:contents}
+    .grp-view{order:1;flex:0 0 auto;justify-content:space-between;padding:8px 12px;
+      background:var(--surface);border-bottom:1px solid var(--line)}
+    #zoom{margin-left:0}
+    #warnBand{order:2;margin:8px 12px 0}
+    #stage{order:3;padding:10px}
+    #selBar{order:4;padding:0 12px}
+    .grp-save{order:5;flex:0 0 auto;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));
+      background:var(--surface);border-top:1px solid var(--line)}
+    #dlOver{order:-1}
+    #dlFull{flex:1}
+    body.pane-edit #toast{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+    body.pane-preview #toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
   }
 </style>
 </head>
 <body>
+<div id="banner"></div>
 <div id="app">
   <div id="tabs">
     <button type="button" data-pane="edit" class="on">編集</button>
@@ -196,120 +315,133 @@
   </div>
   <div id="side"><div id="sideScroll">
 
-    <h1>提供画像メーカー <small>Palmu / 背景01レイヤー生成</small></h1>
+    <div class="apphead"><h1>提供画像メーカー</h1><span id="saveState"></span></div>
 
-    <section id="secBg"><header>1. 背景（ベース画像）</header><div class="body">
-      <label>背景画像を読み込む</label>
-      <input type="file" id="bgFile" accept="image/*">
-      <div class="row" style="margin-top:8px;align-items:end">
-        <div><label>キャンバス幅</label><input type="number" id="cvW"></div>
-        <div><label>キャンバス高さ</label><input type="number" id="cvH"></div>
-        <div style="flex:0 0 auto"><button class="mini" id="bgClear">背景を外す</button></div>
+    <section id="secList">
+      <div class="listHead"><h2>リスナー一覧</h2><span id="listCount" class="chip"></span></div>
+      <div id="dropAll">ここに画像をドロップすると、人数分のリスナーをまとめて追加します</div>
+      <div class="listCard">
+        <div class="listCols" aria-hidden="true"><span>表示</span><span>アイコン</span><span>名前</span><span>バッジ</span><span></span></div>
+        <div id="items"></div>
       </div>
-      <p class="hint">キャンバスの縦横は読み込んだ背景画像にそのまま合わせます。背景を差し替えてサイズが変わった場合は、配置エリア・アイコンの大きさ・手動で動かした位置を<b>すべて同じ比率で拡大縮小</b>するので、レイアウトはそのまま引き継がれます。</p>
-    </div></section>
+      <div class="listActs">
+        <button type="button" class="accent-line" id="addItem">＋ リスナーを追加</button>
+        <button type="button" id="addMulti">画像から一括追加</button>
+      </div>
+      <button type="button" class="text" id="resetPos" hidden>動かした位置を全部戻す</button>
+      <p class="hint">「表示」を外した人は画像に出ませんが、一覧には残ります。</p>
+    </section>
 
-    <section id="secArea" class="closed"><header>2. 配置エリアと並べ方</header><div class="body">
-      <div class="g4">
-        <div><label>左X</label><input type="number" id="arX"></div>
-        <div><label>上Y</label><input type="number" id="arY"></div>
-        <div><label>幅</label><input type="number" id="arW"></div>
-        <div><label>高さ</label><input type="number" id="arH"></div>
-      </div>
-      <div class="g4" style="margin-top:8px">
-        <div><label>基準アイコン径</label><input type="number" id="baseIcon"></div>
-        <div><label>行間</label><input type="number" id="rowGap"></div>
-        <div><label>列間</label><input type="number" id="colGap"></div>
-        <div><label>並び順</label><select id="sortMode">
-          <option value="auto">バッジの高い順</option>
-          <option value="manual">リストの順番</option>
+    <p class="groupLabel">設定・バックアップ（ふだんは閉じたままでOK）</p>
+    <div class="settings">
+
+      <section id="secBg" class="closed"><header><button type="button">背景画像</button></header><div class="body">
+        <div class="bgRow">
+          <button type="button" id="bgPick">背景画像を選ぶ</button>
+          <span id="bgState" class="chip"></span>
+        </div>
+        <input type="file" id="bgFile" accept="image/*" hidden>
+        <div class="g2" style="margin-top:12px">
+          <div><label for="cvW">キャンバス幅</label><input type="number" id="cvW"></div>
+          <div><label for="cvH">キャンバス高さ</label><input type="number" id="cvH"></div>
+        </div>
+        <p class="hint">キャンバスの縦横は背景画像に合わせます。サイズの違う背景に差し替えると、配置エリア・アイコンの大きさ・動かした位置も同じ比率で拡大縮小します。</p>
+        <div class="actRow"><button type="button" class="mini del" id="bgClear">背景を外す</button></div>
+      </div></section>
+
+      <section id="secArea" class="closed"><header><button type="button">配置エリアと並べ方</button></header><div class="body">
+        <div class="g4">
+          <div><label for="arX">左X</label><input type="number" id="arX"></div>
+          <div><label for="arY">上Y</label><input type="number" id="arY"></div>
+          <div><label for="arW">幅</label><input type="number" id="arW"></div>
+          <div><label for="arH">高さ</label><input type="number" id="arH"></div>
+        </div>
+        <div class="g4" style="margin-top:12px">
+          <div><label for="baseIcon">基準アイコン径</label><input type="number" id="baseIcon"></div>
+          <div><label for="rowGap">行間</label><input type="number" id="rowGap"></div>
+          <div><label for="colGap">列間</label><input type="number" id="colGap"></div>
+          <div><label for="sortMode">並び順</label><select id="sortMode">
+            <option value="auto">バッジの高い順</option>
+            <option value="manual">リストの順番</option>
+          </select></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div><label for="fontSel">フォント</label><select id="fontSel">
+            <option>"Yu Gothic UI","Meiryo",sans-serif</option>
+            <option>"BIZ UDPGothic","Yu Gothic UI",sans-serif</option>
+            <option>"Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif</option>
+            <option>"UD デジタル 教科書体 NP-B",serif</option>
+            <option>"MS PGothic",sans-serif</option>
+            <option value="__custom">（自分で入力）</option>
+          </select></div>
+          <div style="flex:0 0 96px"><label for="fontWeight">太さ</label><select id="fontWeight">
+            <option>400</option><option>600</option><option>700</option><option>800</option><option>900</option>
+          </select></div>
+        </div>
+        <div id="fontCustomWrap" style="margin-top:8px;display:none">
+          <input type="text" id="fontCustom" placeholder='例: "源ノ角ゴシック JP", sans-serif'>
+        </div>
+        <div style="margin-top:12px"><label for="labelLayout">名前とバッジ</label><select id="labelLayout">
+          <option value="row">横並び（名前の右にバッジ）</option>
+          <option value="stack">縦2段（名前の下にバッジ・中央揃え）</option>
         </select></div>
-      </div>
-      <div class="row" style="margin-top:8px;align-items:end">
-        <div><label>フォント</label><select id="fontSel">
-          <option>"Yu Gothic UI","Meiryo",sans-serif</option>
-          <option>"BIZ UDPGothic","Yu Gothic UI",sans-serif</option>
-          <option>"Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif</option>
-          <option>"UD デジタル 教科書体 NP-B",serif</option>
-          <option>"MS PGothic",sans-serif</option>
-          <option value="__custom">（自分で入力）</option>
-        </select></div>
-        <div style="flex:0 0 90px"><label>太さ</label><select id="fontWeight">
-          <option>400</option><option>600</option><option>700</option><option>800</option><option>900</option>
-        </select></div>
-      </div>
-      <div id="fontCustomWrap" style="margin-top:6px;display:none">
-        <input type="text" id="fontCustom" placeholder='例: "源ノ角ゴシック JP", sans-serif'>
-      </div>
-      <div style="margin-top:8px"><label>名前とバッジ</label><select id="labelLayout">
-        <option value="row">横並び（名前の右にバッジ）</option>
-        <option value="stack">縦2段（名前の下にバッジ・中央揃え）</option>
-      </select></div>
-      <p class="hint">縦2段では、アイコンの真下に名前とバッジを中央揃えで並べます。切り替えると、配置エリアに収まるよう大きさを自動で合わせます。「3. バッジ段階ごとの大きさ・色」の「1行」の人数と名前X%・名前Y%は、横並びと縦2段で別々に覚えます（縦2段の名前Y%はアイコンとのすき間、名前X%は左右のずれ）。</p>
-      <label class="inline" style="margin-top:10px"><input type="checkbox" id="showGuide"> 配置エリアのガイド枠を表示（書き出しには入りません）</label>
-      <p class="hint">プレビュー上で人物をドラッグすると位置を動かせます。PCは人物をクリックして選んだあと、キーボードの矢印キーでも1pxずつ動かせます（Shiftを押しながらで10pxずつ）。「位置を戻す」で自動で並べた場所に戻ります。</p>
-    </div></section>
+        <p class="hint">縦2段は、アイコンの真下に名前とバッジを中央揃えで並べます。切り替えると配置エリアに収まるよう大きさを合わせます。</p>
+        <label class="inline" style="margin-top:12px"><input type="checkbox" id="showGuide"> 配置エリアのガイド枠を表示（書き出しには入りません）</label>
+      </div></section>
 
-    <section id="secTier" class="closed"><header>3. バッジ段階ごとの大きさ・色</header><div class="body">
-      <div id="tiers"></div>
-      <div class="row">
-        <button class="mini" id="tierAdd">段階を追加</button>
-        <button class="mini" id="tierReset">初期値に戻す</button>
-      </div>
-      <p class="hint">上の段から順に「この値以上」で判定します。数値を空にしても設定は壊れません（確定した数字だけが反映されます）。</p>
-    </div></section>
+      <section id="secTier" class="closed"><header><button type="button">バッジ段階ごとの大きさ・色</button></header><div class="body">
+        <div id="tiers"></div>
+        <div class="tierActs">
+          <button type="button" class="mini" id="tierAdd">段階を追加</button>
+          <button type="button" class="mini del" id="tierReset">初期値に戻す</button>
+        </div>
+        <p class="hint">上の段から順に「この値以上」で判定します。</p>
+      </div></section>
 
-    <section id="secList"><header>4. リスナー一覧</header><div class="body">
-      <div id="dropAll">ここに画像をまとめてドロップすると、人数分のリスナーをまとめて追加します</div>
-      <div id="items"></div>
-      <div class="row" style="margin-top:10px">
-        <button class="primary" id="addItem">＋ リスナーを追加</button>
-        <button class="mini" id="addMulti" style="flex:0 0 auto">画像から一括追加</button>
-        <button class="mini" id="resetPos" style="flex:0 0 auto">位置調整を全リセット</button>
-      </div>
-      <p class="hint">左端のチェックを外した人は画像に出ませんが、一覧には残ります。翌月また出すときはチェックを戻すだけです。</p>
-      <p class="hint">位置はプレビューで人物をドラッグするか、各リスナーの「横」「縦」に数字を入れて動かせます。
-      数字は自動で並べた場所からのずれで、横は＋で右、縦は＋で下です。</p>
-    </div></section>
+      <section id="secData" class="closed"><header><button type="button">バックアップ・初期化</button></header><div class="body">
+        <div class="btnGrid">
+          <button type="button" class="mini" id="expJson">設定を書き出し</button>
+          <button type="button" class="mini" id="impJson">設定を読み込み</button>
+          <button type="button" class="mini" id="impText">テキストから読み込み</button>
+          <button type="button" class="mini" id="cloudPull">他の端末の内容を取り込む</button>
+        </div>
+        <p class="hint" id="cloudNote"></p>
+        <input type="file" id="jsonFile" accept="application/json" hidden>
+        <div class="dangerZone">
+          <button type="button" class="mini del" id="clearItems">リスナーを全消去</button>
+          <button type="button" class="mini del" id="clearAll">背景も含めて初期化</button>
+        </div>
+      </div></section>
 
-    <section id="secData" class="closed"><header>5. データ</header><div class="body">
-      <div class="g3">
-        <button class="mini" id="expJson">設定を書き出し</button>
-        <button class="mini" id="impJson">設定を読み込み</button>
-        <button class="mini" id="impText">テキストから読み込み</button>
-        <button class="mini del" id="clearItems">リスナーを全消去</button>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <button class="mini" id="cloudPull">他の端末の内容を取り込む</button>
-        <button class="mini del" id="clearAll">背景も含めて初期化</button>
-      </div>
-      <p class="hint" id="cloudNote"></p>
-      <input type="file" id="jsonFile" accept="application/json" hidden>
-      <p class="hint">普段は自動保存なので操作不要です。別の端末へ移すときは「設定を書き出し」で出したテキストを、
-      移った先の「テキストから読み込み」に貼り付けてください。</p>
-    </div></section>
-
+    </div>
   </div></div>
   <div id="grip"></div>
 
   <div id="main">
-    <div id="banner"></div>
     <div id="bar">
-      <button class="primary" id="dlFull">完成PNGを保存</button>
-      <button id="dlOver">背景01（透過）を保存</button>
-      <button id="fit">エリアに収める</button>
-      <span id="warn"></span>
-      <span class="sp"></span>
-      <select id="zoom" style="width:auto">
-        <option value="fit">画面に合わせる</option>
-        <option value="0.25">25%</option><option value="0.4">40%</option>
-        <option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option>
-      </select>
-      <span id="status"></span>
+      <div class="grp-save">
+        <button type="button" class="primary" id="dlFull">完成PNGを保存</button>
+        <button type="button" id="dlOver">背景01（透過）を保存</button>
+      </div>
+      <div class="grp-view">
+        <button type="button" id="fit">エリアに収める</button>
+        <select id="zoom" aria-label="表示の大きさ">
+          <option value="fit">画面に合わせる</option>
+          <option value="0.25">25%</option><option value="0.4">40%</option>
+          <option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option>
+        </select>
+      </div>
     </div>
+    <div id="warnBand" hidden><span id="warn"></span></div>
     <div id="stage"><div id="wrap"><canvas id="cv"></canvas></div></div>
+    <div id="selBar">
+      <span id="selMsg"></span>
+      <button type="button" class="mini" id="selReset" hidden>位置を戻す</button>
+      <button type="button" class="mini" id="selEdit" hidden>編集で開く</button>
+    </div>
   </div>
 </div>
+<div id="toast" role="status" hidden><span id="toastMsg"></span><button type="button" id="toastAct" hidden></button></div>
 <div id="modal" hidden>
   <div class="sheet">
     <div class="mhead"><b id="mtitle"></b><button type="button" class="mini" id="mclose">閉じる</button></div>
@@ -500,8 +632,8 @@ function setCloudNote(iso){
   el.textContent = cloud
     ? (iso ? "この内容は他の端末からも開けます（最終保存 " + new Date(iso).toLocaleString("ja-JP") + "）"
            : "この内容は他の端末からも開けます")
-    : "作業内容はこのブラウザの中に保存されます。別の端末で続きをするときは、"
-      + "ここで「設定を書き出し」でJSONを保存し、その端末で「設定を読み込み」してください。";
+    : "作業内容はこのブラウザの中に自動で保存されます。別の端末で続きをするときは、"
+      + "「設定を書き出し」で出した内容を、その端末の「設定を読み込み」か「テキストから読み込み」で取り込んでください。";
 }
 function cloudErrorText(e){
   const c = e && e.code;
@@ -511,10 +643,11 @@ function cloudErrorText(e){
   return (e && e.message) || c || String(e);
 }
 
-let saveTimer = null, statusTimer = null;
+let saveTimer = null;
 function cancelPendingSave(){ clearTimeout(saveTimer); saveTimer = null; }
 function save(){
   cancelPendingSave();
+  setSaveState("saving");
   saveTimer = setTimeout(async ()=>{
     saveTimer = null;
     let localOK = false;
@@ -522,28 +655,48 @@ function save(){
       /* IndexedDB は自前で構造化複製するのでディープコピー不要 */
       try{ await DB.set("state", state); localOK = true; }catch(e){ localOK = false; }
     }
-    let remoteOK = false;
+    let remoteOK = false, remoteErr = null;
     try{ remoteOK = await cloudSave(); }
-    catch(e){ setStatus("他の端末への保存に失敗: " + cloudErrorText(e)); }
+    catch(e){ remoteErr = e; }
 
-    if(remoteOK) setStatus(localOK ? "保存しました（この端末と他の端末）" : "保存しました（他の端末からも開けます）");
-    else if(localOK) setStatus("保存しました（この端末のみ）");
-    else showBanner("⚠ 自動保存に失敗しました。作業内容が消える恐れがあります。"
-      + "「5. データ → 設定を書き出し」でファイルに保存してください。");
+    /* 自動保存の結果はお知らせに出さず、アプリ名の横に小さく出す */
+    if(remoteErr && localOK) setSaveState("cloudErr", cloudErrorText(remoteErr));
+    else if(localOK || remoteOK) setSaveState("ok");
+    else {
+      setSaveState("err", remoteErr ? cloudErrorText(remoteErr) : "");
+      showBanner("⚠ 自動保存に失敗しました。作業内容が消える恐れがあります。"
+        + "「バックアップ・初期化」の「設定を書き出し」で保存してください。");
+    }
   }, 400);
 }
+function setSaveState(kind, detail){
+  const el = $("#saveState");
+  el.classList.toggle("err", kind === "err" || kind === "cloudErr");
+  el.textContent = { saving:"保存中…", ok:"✓ 自動保存済み",
+    err:"⚠ 保存できていません", cloudErr:"⚠ 他の端末に保存できませんでした" }[kind] || "";
+  el.title = detail || "";
+}
+
+/* 画面下のお知らせ。「元に戻す」などの操作付きは10秒、それ以外は4秒。
+   操作付きが出ている間は、ほかのお知らせで上書きしない */
+let toastTimer = null, toastHasAction = false;
 function setStatus(text, action){
-  const el = $("#status");
-  el.textContent = "";
-  el.append(document.createTextNode(text));
-  if(action){
-    const b = document.createElement("button");
-    b.className = "mini"; b.textContent = action.label;
-    b.addEventListener("click", ()=>{ el.textContent = ""; action.run(); });
-    el.append(b);
-  }
-  clearTimeout(statusTimer);
-  statusTimer = setTimeout(()=>{ el.textContent = ""; }, action ? 10000 : 2500);
+  const t = $("#toast");
+  if(!action && toastHasAction && !t.hidden) return;
+  $("#toastMsg").textContent = text;
+  const b = $("#toastAct");
+  b.hidden = !action;
+  b.textContent = action ? action.label : "";
+  b.onclick = action ? ()=>{ hideToast(); action.run(); } : null;
+  toastHasAction = !!action;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, action ? 10000 : 4000);
+}
+function hideToast(){
+  clearTimeout(toastTimer);
+  $("#toast").hidden = true;
+  toastHasAction = false;
 }
 function showBanner(text){
   const b = $("#banner");
@@ -846,8 +999,18 @@ function render(opts){
       ctx.restore();
     }
   }
-  if(opts.hit !== false){ lastNodes = nodes; checkWarnings(nodes); updateTierCounts(); }
+  if(opts.hit !== false){ lastNodes = nodes; checkWarnings(nodes); syncWarnBand(); updateTierCounts(); }
+  updateListMeta();
+  updateSelBar();
   applyZoom();
+}
+
+/* 警告があるときだけ帯を出し、スマホの「プレビュー」タブに赤い点を付ける */
+function syncWarnBand(){
+  const has = !!$("#warn").textContent;
+  $("#warnBand").hidden = !has;
+  const tab = document.querySelector('#tabs [data-pane="preview"]');
+  if(tab) tab.classList.toggle("alert", has);
 }
 
 /* 「画像から切れる」と「エリアからはみ出す」を分けて伝える */
@@ -865,7 +1028,7 @@ function checkWarnings(nodes){
   if(cut.length){
     const names = cut.map(n => n.m.label || "（名前なし）").slice(0,3).join("、");
     el.textContent = `⚠ 画像から切れています：${names}${cut.length>3?` ほか${cut.length-3}件`:""}`
-      + " ←「エリアに収める」を押してください";
+      + "。「エリアに収める」で直せます";
     return;
   }
   const ab = num(state.area.y,0) + num(state.area.h,0);
@@ -875,11 +1038,11 @@ function checkWarnings(nodes){
   const msgs = [];
   if(bottom > ab) msgs.push(`縦に${Math.round(bottom-ab)}px`);
   if(right  > ar) msgs.push(`横に${Math.round(right-ar)}px`);
-  if(msgs.length) el.textContent = `⚠ 配置エリアから ${msgs.join(" / ")} はみ出しています`;
+  if(msgs.length) el.textContent = `⚠ 配置エリアから ${msgs.join(" / ")} はみ出しています。「エリアに収める」で直せます`;
 }
 
 /* 配置エリアに収まる最大の基準アイコン径を探す */
-function fitToArea(){
+function fitToArea(opts){
   const ab = num(state.area.y,0) + num(state.area.h,0);
   const ar = num(state.area.x,0) + num(state.area.w,0);
   const fits = v => {
@@ -903,7 +1066,7 @@ function fitToArea(){
   }
   state.baseIcon = Math.floor(lo);
   syncControls(); render(); save();
-  setStatus(`基準アイコン径を ${state.baseIcon}px にしました`);
+  if(!(opts && opts.quiet)) setStatus(`基準アイコン径を ${state.baseIcon}px にしました`);
 }
 
 function applyZoom(){
@@ -941,7 +1104,8 @@ function rescaleGeometry(oldW, oldH, newW, newH){
    ドラッグ
    ============================================================ */
 let drag = null;
-const DRAG_THRESHOLD = 4;
+/* 動かし始めは画面上の距離で判定する。指はぶれやすいので大きめにとる */
+const DRAG_THRESHOLD = { mouse:4, touch:8 };
 function toCanvas(ev){
   const r = cv.getBoundingClientRect();
   return { x:(ev.clientX-r.left)*cv.width/r.width, y:(ev.clientY-r.top)*cv.height/r.height };
@@ -966,9 +1130,9 @@ function endDrag(ev){
 }
 cv.addEventListener("pointermove", ev=>{
   if(drag){
+    if(!drag.moved && Math.hypot(ev.clientX - drag.sx, ev.clientY - drag.sy) < drag.th) return;
     const p = toCanvas(ev);
     const dx = p.x - drag.start.x, dy = p.y - drag.start.y;
-    if(!drag.moved && Math.hypot(dx,dy) < DRAG_THRESHOLD) return;
     drag.moved = true;
     setOff(drag.it, drag.base.x + dx, drag.base.y + dy);
     render({hit:false});
@@ -983,7 +1147,9 @@ cv.addEventListener("pointerdown", ev=>{
   if(!n){ setSelected(null); return; }
   setSelected(n.it.id);
   const off = n.it.off || {x:0,y:0};
-  drag = { it:n.it, start:p, base:{x:num(off.x,0), y:num(off.y,0)}, moved:false };
+  drag = { it:n.it, start:p, base:{x:num(off.x,0), y:num(off.y,0)}, moved:false,
+           sx:ev.clientX, sy:ev.clientY,
+           th: ev.pointerType === "mouse" ? DRAG_THRESHOLD.mouse : DRAG_THRESHOLD.touch };
   try{ cv.setPointerCapture(ev.pointerId); }catch(e){}
   cv.className = "grabbing";
 });
@@ -1001,7 +1167,7 @@ function badgeOptions(){
   const f = document.createDocumentFragment();
   for(let n = Math.round(BADGE_MAX*10); n >= Math.round(BADGE_MIN*10); n--){
     const o = document.createElement("option");
-    o.value = String(n/10); o.textContent = fmtBadge(n/10);
+    o.value = String(n/10); o.textContent = "★" + fmtBadge(n/10);
     f.append(o);
   }
   return f;
@@ -1028,36 +1194,55 @@ function selectQuiet(id){
   return true;
 }
 
+/* 行の詳細（大きさ・位置・順番・削除）。開けるのは同時に1人だけ。保存はしない */
+let openId = null;
+function syncOpen(el){
+  const open = !!el.__item && el.__item.id === openId;
+  el.querySelector(".det").hidden = !open;
+  el.querySelector("[data-act=more]").setAttribute("aria-expanded", open ? "true" : "false");
+}
+function setOpen(id){
+  openId = id;
+  $("#items").querySelectorAll(".item").forEach(syncOpen);
+}
+function toggleOpen(it){
+  const opening = openId !== it.id;
+  setOpen(opening ? it.id : null);
+  if(!opening) return;
+  setSelected(it.id, {noScroll:true});
+  const row = rowOf(it);
+  if(row) row.scrollIntoView({block:"nearest"});
+}
+
+/* 1人1行：表示｜アイコン｜名前｜バッジ｜⌄（詳細） */
 const ITEM_HTML = `
-  <div class="on"><input type="checkbox" data-act="on" title="この画像に出す"></div>
-  <div class="thumb" data-act="pick" title="クリック or 画像をドロップ"></div>
-  <div class="fields">
-    <input type="text" data-act="name" placeholder="表示名（絵文字もOK）">
-    <div class="g3">
-      <div><label>バッジ</label><select data-act="badge"></select></div>
-      <div><label>大きさ</label><select data-act="scaleMode">
+  <label class="on" title="この画像に出す"><input type="checkbox" data-act="on" aria-label="この画像に出す"></label>
+  <div class="thumb" data-act="pick" title="タップで画像を選ぶ（画像のドロップも可）"></div>
+  <input type="text" data-act="name" placeholder="表示名（絵文字もOK）" aria-label="名前">
+  <select data-act="badge" aria-label="バッジ"></select>
+  <button type="button" class="more" data-act="more" aria-expanded="false" aria-label="大きさ・位置・削除"></button>
+  <div class="det" hidden>
+    <div class="detRow">
+      <label class="fld">大きさ <select data-act="scaleMode">
         <option value="auto">自動</option><option value="manual">手動</option>
-      </select></div>
-      <div><label>倍率</label><input type="number" step="0.01" min="0.05" data-act="scale"></div>
+      </select></label>
+      <label class="fld scaleWrap">倍率 <input type="number" step="0.01" min="0.05" data-act="scale"></label>
     </div>
-  </div>
-  <div class="pos">
-    <div class="xy">
-      <span class="cap">位置</span>
-      <label>横 <input type="number" step="1" data-act="offx"> px</label>
-      <label>縦 <input type="number" step="1" data-act="offy"> px</label>
+    <div class="pos">
+      <div class="xy">
+        <span class="cap">位置</span>
+        <label>横 <input type="number" step="1" data-act="offx"></label>
+        <label>縦 <input type="number" step="1" data-act="offy"> px</label>
+        <button type="button" class="mini" data-act="reset" hidden>位置を戻す</button>
+      </div>
+      <p class="hint">横は＋で右、縦は＋で下へ動きます。プレビューで人物をドラッグしても動かせます。</p>
     </div>
-    <button type="button" class="mini" data-act="reset" hidden>位置を戻す</button>
-  </div>
-  <div class="ctl">
     <div class="order" hidden>
       <span class="cap">順番</span>
-      <div class="btns">
-        <button type="button" class="mini" data-act="up" aria-label="順番を1つ前へ">▲</button>
-        <button type="button" class="mini" data-act="down" aria-label="順番を1つ後ろへ">▼</button>
-      </div>
+      <button type="button" class="mini" data-act="up" aria-label="順番を1つ前へ">▲</button>
+      <button type="button" class="mini" data-act="down" aria-label="順番を1つ後ろへ">▼</button>
     </div>
-    <button type="button" class="mini del" data-act="del">削除</button>
+    <div class="detFoot"><button type="button" class="mini del" data-act="del">このリスナーを削除</button></div>
   </div>`;
 
 function renderList(){
@@ -1100,12 +1285,15 @@ function syncItemRow(el, it, idx, manual){
   const sc = q("[data-act=scale]");
   setVal(sc, num(it.scale ?? t.scale, 1).toFixed(2));
   sc.disabled = it.scale == null;
+  q(".scaleWrap").hidden = it.scale == null;     /* 倍率は「手動」のときだけ出す */
   /* 順番の入れ替えは「リストの順番」で並べるときだけ意味があるので、そのときだけ出す */
   q(".order").hidden = !manual;
   q("[data-act=up]").disabled   = idx <= 0;
   q("[data-act=down]").disabled = idx >= state.items.length - 1;
   syncPos(el, it);
+  syncOpen(el);
   const th = q(".thumb");
+  th.style.setProperty("--ring", t.ring || "");  /* サムネの枠は画像と同じ段の色 */
   th.classList.toggle("has", !!it.icon);
   if(th.__icon !== it.icon){            /* 大きな画像文字列を毎回入れ直さない */
     th.__icon = it.icon;
@@ -1150,6 +1338,7 @@ function onItemInput(e, it, el){
 function onItemClick(e, it){
   const a = e.target.dataset.act;
   if(a === "pick"){ pickIconFor = it; $("#iconPicker").value = ""; $("#iconPicker").click(); }
+  else if(a === "more")  toggleOpen(it);
   else if(a === "del")   deleteItem(it);
   else if(a === "reset") resetPos(it);
   else if(a === "up" || a === "down"){
@@ -1166,6 +1355,7 @@ function deleteItem(it){
   const img = iconCache.get(it.id);
   state.items.splice(idx,1); iconCache.delete(it.id); reseq();
   if(selectedId === it.id) selectedId = null;
+  if(openId === it.id) openId = null;
   render(); renderList(); save();
   setStatus(`「${it.name || "名前なし"}」を削除しました`, {
     label:"元に戻す",
@@ -1218,10 +1408,39 @@ function syncPos(el, it){
   ix.classList.toggle("moved", x !== 0);
   iy.classList.toggle("moved", y !== 0);
   el.querySelector("[data-act=reset]").hidden = !it.off;
+  el.classList.toggle("tuned", !!it.off || it.scale != null);   /* ⌄ の右上の点 */
 }
 function selectedItem(){
   return state.items.find(x => x.id === selectedId && x.on !== false) || null;
 }
+
+/* 一覧の見出しの人数と、「動かした位置を全部戻す」 */
+function updateListMeta(){
+  const total = state.items.length;
+  const shown = state.items.filter(i => i.on !== false).length;
+  $("#listCount").textContent = `表示 ${shown}/${total}人`;
+  const moved = state.items.filter(i => i.off).length;
+  const b = $("#resetPos");
+  b.hidden = moved === 0;
+  b.textContent = `動かした位置を全部戻す（${moved}人）`;
+}
+
+/* プレビュー下の選択バー */
+function updateSelBar(){
+  const it = selectedItem();
+  $("#selReset").hidden = !(it && it.off);
+  $("#selEdit").hidden = !it;
+  const hover = !!(window.matchMedia && matchMedia("(hover:hover)").matches);
+  $("#selMsg").textContent = it ? "選択中：" + (it.name || "（名前なし）")
+    : hover ? "クリックで選択・ドラッグか矢印キーで移動" : "人物をタップで選択・ドラッグで移動";
+}
+$("#selReset").addEventListener("click", ()=> resetPos(selectedItem()));
+$("#selEdit").addEventListener("click", ()=>{
+  const it = selectedItem();
+  if(!it) return;
+  setOpen(it.id);
+  setPane("edit");
+});
 
 /* PC：人物を選んだあと矢印キーで動かす（1px、Shiftで10px）。Escで選択を解除 */
 document.addEventListener("keydown", e=>{
@@ -1274,6 +1493,20 @@ $("#iconPickerMulti").addEventListener("change", e=> addFromFiles(e.target.files
   dz.addEventListener("dragleave", ()=> dz.classList.remove("drop"));
   dz.addEventListener("drop", e=>{ e.preventDefault(); dz.classList.remove("drop"); addFromFiles(e.dataTransfer.files); });
 })();
+/* まとめて追加の受け口は、ファイルをドラッグしている間だけ出す。
+   枠の外に落としても、ブラウザがその画像を開いてしまわないようにする */
+(function(){
+  let t = null;
+  const isFiles = e => !!e.dataTransfer && [...(e.dataTransfer.types || [])].includes("Files");
+  const end = ()=>{ clearTimeout(t); document.body.classList.remove("dragfiles"); };
+  window.addEventListener("dragover", e=>{
+    if(!isFiles(e)) return;
+    e.preventDefault();
+    document.body.classList.add("dragfiles");
+    clearTimeout(t); t = setTimeout(end, 200);
+  });
+  window.addEventListener("drop", e=>{ if(isFiles(e)){ e.preventDefault(); end(); } });
+})();
 $("#addItem").addEventListener("click", ()=>{
   const it = newItem();
   state.items.push(it); reseq(); selectedId = it.id;
@@ -1291,29 +1524,37 @@ $("#resetPos").addEventListener("click", ()=>{
 /* ============================================================
    ティア UI
    ============================================================ */
-const NUMS = [["min","この値以上","0.01",1],["scale","倍率","0.01",1],["fs","文字%","1",100],
-              ["lx","名前X%","1",100],["ly","名前Y%","1",100],["ow","縁太さ%","1",100]];
+/* 数値欄：[キー, ラベル, 刻み, 画面の数字 ÷ この値 ＝ 内部の値] */
+const NUMS = [["min","この値以上","0.01",1],["scale","アイコン倍率","0.01",1],["fs","文字の大きさ(%)","1",100],
+              ["lx","名前の左右(%)","1",100],["ly","名前の上下(%)","1",100],["ow","縁の太さ(%)","1",100]];
 /* 「1行」と名前X%／名前Y% は横並びと縦2段で別の値を持つ。切り替えても、それぞれの調整が残る */
 const posKey = k => state.labelLayout === "stack" ? ({cols:"vcols", lx:"vx", ly:"vy"}[k] || k) : k;
 const COLORS = [["ring","アイコン枠"],["outline","名前の縁"],["text","名前の文字"],
                 ["badge","バッジ地"],["badgeBorder","バッジ枠"],["star","星"]];
+/* 段ごとに折りたたむ。見出しは「●段の色・段の名前・今N人」 */
 const TIER_HTML = `
-  <div class="ttl"><b></b><span class="cnt"></span><button class="mini del" data-del="1">削除</button></div>
-  <div class="g6">
-    ${NUMS.map(([k,l,s])=>`<div><label>${l}</label><input type="number" step="${s}" data-k="${k}"></div>`).join("")}
-    <div><label>1行</label><input type="number" step="1" min="1" data-k="cols"></div>
-  </div>
-  <div class="g2" style="margin-top:6px">
-    <div><label>並べ方</label><select data-k="flow">
-      <option value="row">横に流す</option><option value="col">縦に流す（左の列から）</option>
-    </select></div>
-    <div><label>段の名前</label><input type="text" data-k="label"></div>
-  </div>
-  <details class="adv"><summary>色の設定</summary>
-    <div class="g6 sw" style="margin-top:6px">
-      ${COLORS.map(([k,l])=>`<div><label>${l}</label><input type="color" data-k="${k}"></div>`).join("")}
+  <summary class="ttl"><span class="dot"></span><b></b><span class="cnt chip"></span></summary>
+  <div class="tierBody">
+    <div class="tgrid">
+      <div class="span2"><label>段の名前</label><input type="text" data-k="label"></div>
+      <div><label>この値以上</label><input type="number" step="0.01" data-k="min"></div>
+      <div><label>アイコン倍率</label><input type="number" step="0.01" data-k="scale"></div>
+      <div><label>文字の大きさ(%)</label><input type="number" step="1" data-k="fs"></div>
+      <div><label>縁の太さ(%)</label><input type="number" step="1" data-k="ow"></div>
+      <div><label>1行の人数</label><input type="number" step="1" min="1" data-k="cols"></div>
+      <div><label class="lxLbl">名前の左右(%)</label><input type="number" step="1" data-k="lx"></div>
+      <div><label class="lyLbl">名前の上下(%)</label><input type="number" step="1" data-k="ly"></div>
+      <div style="grid-column:1/-1"><label>並べ方</label><select data-k="flow">
+        <option value="row">横に流す</option><option value="col">縦に流す（左の列から）</option>
+      </select></div>
     </div>
-  </details>`;
+    <details class="adv"><summary>色の設定</summary>
+      <div class="cgrid">
+        ${COLORS.map(([k,l])=>`<div><label>${l}</label><input type="color" data-k="${k}"></div>`).join("")}
+      </div>
+    </details>
+    <div class="tierFoot"><button type="button" class="mini del" data-del="1">この段を削除</button></div>
+  </div>`;
 
 function renderTiers(){
   const box = $("#tiers");
@@ -1322,7 +1563,7 @@ function renderTiers(){
   numberTiers();
 }
 function buildTier(t){
-  const el = document.createElement("div");
+  const el = document.createElement("details");
   el.className = "tier";
   el.innerHTML = TIER_HTML;            /* 雛形のみ。データは埋めない */
   el.__tier = t;
@@ -1339,9 +1580,11 @@ function buildTier(t){
     } else {
       t[k] = e.target.value;
       if(k === "label") el.querySelector(".ttl b").textContent = t.label || "";
+      if(k === "ring") el.querySelector(".dot").style.background = t.ring;
     }
     render(); save();
-    if(k === "scale" || k === "min") state.items.forEach(refreshRow);
+    /* 一覧のサムネの枠も段の色なので合わせる */
+    if(k === "scale" || k === "min" || k === "ring") state.items.forEach(refreshRow);
   });
   el.addEventListener("change", e=>{
     if(e.target.dataset.k !== "min") return;
@@ -1378,6 +1621,11 @@ function syncTier(el){
     if(inp) inp.value = /^#[0-9a-f]{6}$/i.test(t[k]||"") ? t[k] : "#ffffff";
   });
   el.querySelector(".ttl b").textContent = t.label || "";
+  el.querySelector(".dot").style.background = t.ring || "";
+  /* 縦2段のときは、名前の位置の意味が「左右のずれ」「アイコンとのすき間」になる */
+  const stack = state.labelLayout === "stack";
+  el.querySelector(".lxLbl").textContent = stack ? "左右のずれ(%)" : "名前の左右(%)";
+  el.querySelector(".lyLbl").textContent = stack ? "アイコンとのすき間(%)" : "名前の上下(%)";
 }
 function numberTiers(){
   [...$("#tiers").children].forEach((el,i)=>{
@@ -1402,6 +1650,9 @@ $("#tierAdd").addEventListener("click", ()=>{
   const last = state.tiers[state.tiers.length-1];
   const t = {...last, label:"新しい段", min: clamp(num(last.min,1) - 0.5, BADGE_MIN, BADGE_MAX)};
   state.tiers.push(t); sortTiers(); renderTiers(); render(); save();
+  /* 追加した段だけ開いて見せる */
+  const el = [...$("#tiers").children].find(c => c.__tier === t);
+  if(el){ el.open = true; el.scrollIntoView({block:"nearest"}); }
 });
 $("#tierReset").addEventListener("click", ()=>{
   if(!confirm("バッジ段階の設定を初期値に戻します。よろしいですか？")) return;
@@ -1435,6 +1686,9 @@ function syncControls(){
   if(opt){ $("#fontSel").value = opt.value; $("#fontCustomWrap").style.display = "none"; }
   else { $("#fontSel").value = "__custom"; $("#fontCustomWrap").style.display = "block";
          $("#fontCustom").value = state.font; }
+  $("#bgState").textContent = bgImg
+    ? `読み込み済み（${bgImg.naturalWidth}×${bgImg.naturalHeight}）` : "未設定（透明）";
+  $("#bgClear").disabled = !state.bg;
 }
 function wireControls(){
   bindNum("#cvW", ()=>state.canvas.w, v=>state.canvas.w=v, 16, 20000);
@@ -1493,27 +1747,42 @@ function wireControls(){
     }catch(err){ alert("背景を読み込めませんでした: " + err.message); }
     e.target.value = "";
   });
+  $("#bgPick").addEventListener("click", ()=> $("#bgFile").click());
   $("#bgClear").addEventListener("click", ()=>{
-    state.bg = null; bgImg = null; $("#bgFile").value = ""; render(); save();
+    if(!state.bg) return;
+    const keepBg = state.bg, keepImg = bgImg;
+    state.bg = null; bgImg = null; $("#bgFile").value = "";
+    syncControls(); render(); save();
+    setStatus("背景を外しました", { label:"元に戻す", run(){
+      state.bg = keepBg; bgImg = keepImg; syncControls(); render(); save();
+    }});
   });
 
+  /* 設定の見出し：開閉と、読み上げ用の aria-expanded をそろえる */
   document.querySelectorAll("section>header").forEach(h=>{
-    h.addEventListener("click", ()=> h.parentElement.classList.toggle("closed"));
+    const b = h.querySelector("button");
+    const sync = ()=>{ if(b) b.setAttribute("aria-expanded", String(!h.parentElement.classList.contains("closed"))); };
+    h.addEventListener("click", ()=>{ h.parentElement.classList.toggle("closed"); sync(); });
+    sync();
   });
 }
 
 /* スマホのタブ切り替え */
-(function(){
-  document.body.classList.add("pane-edit");
-  $("#tabs").addEventListener("click", e=>{
-    const p = e.target.dataset && e.target.dataset.pane;
-    if(!p) return;
-    document.body.classList.remove("pane-edit","pane-preview");
-    document.body.classList.add("pane-" + p);
-    [...$("#tabs").children].forEach(b => b.classList.toggle("on", b.dataset.pane === p));
-    applyZoom();
-  });
-})();
+function setPane(p){
+  document.body.classList.remove("pane-edit","pane-preview");
+  document.body.classList.add("pane-" + p);
+  [...$("#tabs").children].forEach(b => b.classList.toggle("on", b.dataset.pane === p));
+  if(p === "preview"){ render(); return; }   /* 枠線の太さは見えている大きさで決まるので描き直す */
+  applyZoom();
+  /* 編集に戻ったら、選んでいる人の行を真ん中に出す */
+  const row = selectedId && rowOf(state.items.find(x => x.id === selectedId));
+  if(row) row.scrollIntoView({block:"center"});
+}
+document.body.classList.add("pane-edit");
+$("#tabs").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-pane]");
+  if(b) setPane(b.dataset.pane);
+});
 
 /* サイドバー幅 */
 (function(){
@@ -1606,7 +1875,7 @@ async function showTextToCopy(name, blob){
   wrap.append(ta, act);
   openModal(name,
     "この内容をコピーして、メモなどに控えてください。"
-    + "別の端末では「5. データ → テキストから読み込み」に貼り付ければ続きができます。", wrap);
+    + "別の端末では「バックアップ・初期化」の「テキストから読み込み」に貼り付ければ続きができます。", wrap);
 }
 
 function download(name){
@@ -1794,7 +2063,7 @@ async function probeStorage(){
   setCloudNote(remote && remote.savedAt);
   if(!storageOK && !cloud){
     showBanner("⚠ このブラウザでは自動保存が使えません。閉じると作業内容は消えます。"
-      + "作業の区切りごとに「5. データ → 設定を書き出し」でファイルに保存してください。");
+      + "作業の区切りごとに「バックアップ・初期化」の「設定を書き出し」で保存してください。");
   }
   if(remote){
     state = normalizeState(remote);
@@ -1827,11 +2096,11 @@ async function probeStorage(){
      ["笑桜のくるみ",3.80],["ひで坊",3.20],["PON君",3.20],["蒼氷のりり",3.20],
      ["べいくん",3.10],["硝煙のベーコン",3.00],["startend",3.00],["未来（ミク）",3.00],["宵風",3.00]]
       .forEach(([n,b],i)=>{ const it = newItem(); it.name = n; it.badge = b; it.seq = i; state.items.push(it); });
-    setStatus("サンプルを表示しています。「5. データ → リスナーを全消去」で空にできます");
+    setStatus("サンプルを表示しています。「バックアップ・初期化」の「リスナーを全消去」で空にできます");
   }
   await hydrate();
   markCloudSynced();
-  if(state.items.length) fitToArea();
+  if(state.items.length) fitToArea({quiet:true});
 })();
 </script>
 </body>
