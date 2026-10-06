@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>提供画像メーカー（Palmu）</title>
-<!-- 2026-10-06 操作パネルを作り直した版 -->
+<!-- 2026-10-06 1人ずつの並べ方・複数選択と整列・Discord/X送信を足した版 -->
 <style>
   :root{
     color-scheme:light;
@@ -93,6 +93,7 @@
   input[type=color]{width:100%;height:32px;padding:2px;border:1px solid var(--line-strong);
     border-radius:var(--r-md);background:var(--field);cursor:pointer}
   input[type=checkbox]{width:20px;height:20px;margin:0;accent-color:var(--accent);cursor:pointer}
+  input[type=radio]{width:18px;height:18px;margin:0;accent-color:var(--accent);cursor:pointer}
 
   .row{display:flex;gap:8px;align-items:flex-end}
   .row>*{flex:1;min-width:0}
@@ -121,6 +122,14 @@
   button.accent-line{border-color:var(--accent);color:var(--accent-text)}
   button.accent-line:hover:not(:disabled){background:var(--accent-subtle)}
   :is(button,input[type=checkbox],input[type=color],summary):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* 2択の切り替え（押されている方が塗りつぶし） */
+  .seg{display:inline-flex;flex:0 0 auto;border:1px solid var(--line-strong);border-radius:var(--r-sm);overflow:hidden}
+  .seg button{height:calc(var(--h-ctl-sm) - 2px);padding:0 10px;border:0;border-radius:0;
+    background:var(--surface);color:var(--text-2);font-size:var(--fs-sm);font-weight:600}
+  .seg button+button{border-left:1px solid var(--line-strong)}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+  .seg button[aria-pressed="true"]:hover:not(:disabled){background:var(--accent-hover)}
 
   .hint{font-size:var(--fs-sm);line-height:1.7;color:var(--text-2);margin:8px 0 0}
   .chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;
@@ -161,6 +170,8 @@
   .fld{display:flex;align-items:center;gap:8px;margin:0;font-size:var(--fs-sm);color:var(--text-2)}
   .fld select{width:96px}
   .fld input{width:84px}
+  .layNote{font-size:var(--fs-xs);color:var(--text-3)}
+  .layNote.own{color:var(--accent-text);font-weight:700}
   .xy{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
   .xy label{display:flex;align-items:center;gap:6px;margin:0;font-size:var(--fs-sm);color:var(--text-2)}
   .xy input{width:76px}
@@ -205,6 +216,7 @@
   .tierBody{padding:4px 12px 12px;border-top:1px solid var(--line)}
   .tgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:8px}
   .tgrid .span2{grid-column:span 2}
+  .altCap{grid-column:1/-1;margin:4px 0 -6px;font-size:var(--fs-xs);font-weight:700;color:var(--text-3)}
   .adv{margin-top:12px}
   .adv>summary{display:flex;align-items:center;min-height:32px;font-size:var(--fs-sm);font-weight:600;
     color:var(--text-2);cursor:pointer;user-select:none;-webkit-user-select:none}
@@ -218,10 +230,14 @@
   .dangerZone{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 
   /* ---- プレビュー ---- */
-  #main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--stage)}
+  #main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--stage);
+    container-type:inline-size;container-name:main}
   #bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 16px;
     background:var(--surface);border-bottom:1px solid var(--line)}
-  .grp-save,.grp-view{display:flex;align-items:center;gap:8px}
+  .grp-save,.grp-view{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .brand svg{width:16px;height:16px;flex:0 0 auto}
+  #shareDiscord svg{color:#5865f2}
+  #dlOver{gap:0}
   .grp-view{flex:1}
   #zoom{width:auto;margin-left:auto}
   #warnBand{flex:0 0 auto;margin:10px 16px 0;padding:8px 12px;border-radius:var(--r-md);
@@ -234,13 +250,31 @@
     background-size:20px 20px,20px 20px,100% 100%;background-position:0 0,10px 10px,0 0}
   #cv{display:block;touch-action:none}
   #cv.grab{cursor:grab} #cv.grabbing{cursor:grabbing}
-  /* 選択バーは常に同じ高さで出しておく（出し入れで表示倍率が変わるとドラッグがずれる） */
+  /* 選択バーは常に同じ高さ・1行で出しておく（出し入れで表示倍率が変わるとドラッグがずれる）。
+     入りきらないときは折り返さずに横へスクロールする */
   #selBar{flex:0 0 auto;display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;
-    background:var(--surface);border-top:1px solid var(--line);font-size:var(--fs-sm);color:var(--text-2)}
-  #selMsg{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    background:var(--surface);border-top:1px solid var(--line);font-size:var(--fs-sm);color:var(--text-2);
+    overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  #selBar::-webkit-scrollbar{display:none}
+  #selBar>*{flex:0 0 auto}
+  #selBar>#selMsg{flex:1 1 auto;min-width:6em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .alg,.selLay{display:flex;align-items:center;gap:4px}
+  .selLay{gap:6px}
+  .alg button{padding:0 8px;gap:4px}
+  .alg svg{width:16px;height:16px;flex:0 0 auto}
+  .alg .sep{width:1px;height:20px;margin:0 4px;background:var(--line)}
+  #selMulti[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+  /* プレビューの幅が狭いときは、そろえるボタンを絵だけにする */
+  @container main (max-width:1000px){
+    .alg .lbl{display:none}
+    .alg button{width:34px;padding:0}
+  }
+  @container main (max-width:640px){
+    .selLay .segCap{display:none}
+  }
 
-  /* ---- お知らせ（画面下） ---- */
-  #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  /* ---- お知らせ（画面下。プレビュー下の選択バーにはかぶせない） ---- */
+  #toast{position:fixed;left:50%;bottom:calc(60px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
     z-index:300;display:flex;align-items:center;gap:12px;width:max-content;max-width:min(480px,calc(100vw - 32px));
     min-height:48px;padding:10px 12px 10px 16px;border-radius:var(--r-lg);background:var(--toast-bg);
     color:var(--toast-text);box-shadow:var(--shadow-lg);font-size:var(--fs-md)}
@@ -263,7 +297,20 @@
     font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;
     border:1px solid var(--line-strong);border-radius:var(--r-md);padding:8px;
     background:var(--field);color:var(--text)}
-  #modal .mact{display:flex;gap:8px}
+  #modal .mact{display:flex;flex-wrap:wrap;gap:8px}
+  /* Discord・X に送るパネル */
+  #modal .col{display:flex;flex-direction:column;gap:12px}
+  #modal img.shot{max-height:min(36vh,300px);width:auto;margin:0 auto}
+  #modal textarea.msg{min-height:76px;font:var(--fs-input)/1.5 var(--font-ui);padding:8px 10px}
+  #modal .steps{margin:0;padding-left:1.4em;font-size:var(--fs-sm);line-height:1.8;color:var(--text-2)}
+  #modal .kinds{display:flex;flex-wrap:wrap;gap:8px 20px}
+  #modal .dest{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:var(--fs-sm);color:var(--text-2)}
+  #modal .mmsg{margin:0;font-size:var(--fs-sm);line-height:1.6;color:var(--text-2)}
+  #modal .mmsg:empty{display:none}
+  #modal .mmsg.err{color:var(--danger);font-weight:600}
+  #modal .mmsg.ok{color:var(--accent-text);font-weight:600}
+  #modal a.btnLink{display:inline-flex;align-items:center;height:var(--h-ctl);padding:0 16px;
+    border:1px solid var(--accent);border-radius:var(--r-md);color:var(--accent-text);font-weight:700;text-decoration:none}
 
   /* ---- スマホ・タブレット：2ペインをやめてタブで切り替える ---- */
   #tabs{display:none;flex:0 0 auto}
@@ -300,10 +347,15 @@
     #selBar{order:4;padding:0 12px}
     .grp-save{order:5;flex:0 0 auto;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));
       background:var(--surface);border-top:1px solid var(--line)}
+    .grp-save{flex-wrap:nowrap}
     #dlOver{order:-1}
     #dlFull{flex:1}
+    /* 横幅が足りないので、Discord・X はロゴだけ、背景01 は短く */
+    .grp-save .lg{display:none}
+    .brand{width:var(--h-ctl);padding:0}
+    .brand svg{width:20px;height:20px}
     body.pane-edit #toast{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
-    body.pane-preview #toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+    body.pane-preview #toast{bottom:calc(116px + env(safe-area-inset-bottom,0px))}
   }
 </style>
 </head>
@@ -382,11 +434,11 @@
         <div id="fontCustomWrap" style="margin-top:8px;display:none">
           <input type="text" id="fontCustom" placeholder='例: "源ノ角ゴシック JP", sans-serif'>
         </div>
-        <div style="margin-top:12px"><label for="labelLayout">名前とバッジ</label><select id="labelLayout">
+        <div style="margin-top:12px"><label for="labelLayout">名前とバッジ（全員）</label><select id="labelLayout">
           <option value="row">横並び（名前の右にバッジ）</option>
           <option value="stack">縦2段（名前の下にバッジ・中央揃え）</option>
         </select></div>
-        <p class="hint">縦2段は、アイコンの真下に名前とバッジを中央揃えで並べます。切り替えると配置エリアに収まるよう大きさを合わせます。</p>
+        <p class="hint">縦2段は、アイコンの真下に名前とバッジを中央揃えで並べます。切り替えると配置エリアに収まるよう大きさを合わせます。1人ずつ変えたいときは、一覧の ⌄ を開くか、プレビューでその人を選んで切り替えてください。</p>
         <label class="inline" style="margin-top:12px"><input type="checkbox" id="showGuide"> 配置エリアのガイド枠を表示（書き出しには入りません）</label>
       </div></section>
 
@@ -422,7 +474,9 @@
     <div id="bar">
       <div class="grp-save">
         <button type="button" class="primary" id="dlFull">完成PNGを保存</button>
-        <button type="button" id="dlOver">背景01（透過）を保存</button>
+        <button type="button" id="dlOver" aria-label="背景01（透過）を保存">背景01<span class="lg">（透過）を保存</span></button>
+        <button type="button" class="brand" id="shareDiscord" aria-label="Discordに送る" title="Discordに送る"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg><span class="lg">Discordに送る</span></button>
+        <button type="button" class="brand" id="shareX" aria-label="Xに投稿" title="Xに投稿"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg><span class="lg">Xに投稿</span></button>
       </div>
       <div class="grp-view">
         <button type="button" id="fit">エリアに収める</button>
@@ -437,8 +491,23 @@
     <div id="stage"><div id="wrap"><canvas id="cv"></canvas></div></div>
     <div id="selBar">
       <span id="selMsg"></span>
-      <button type="button" class="mini" id="selReset" hidden>位置を戻す</button>
       <button type="button" class="mini" id="selEdit" hidden>編集で開く</button>
+      <button type="button" class="mini" id="selMulti" aria-pressed="false" hidden>複数選択</button>
+      <div id="selAlign" class="alg" role="group" aria-label="そろえる" hidden>
+        <button type="button" class="mini" data-al="top" title="上ぞろえ（アイコンの上をそろえる）" aria-label="上ぞろえ"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 1.75h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="3.5" y="4" width="3.5" height="10" rx="1" fill="currentColor"/><rect x="9" y="4" width="3.5" height="6" rx="1" fill="currentColor"/></svg><span class="lbl">上ぞろえ</span></button>
+        <button type="button" class="mini" data-al="middle" title="真ん中ぞろえ（アイコンの上下の真ん中をそろえる）" aria-label="真ん中ぞろえ"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 8h2.5M7 8h2M12.5 8H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="3.5" y="2" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="9" y="4.5" width="3.5" height="7" rx="1" fill="currentColor"/></svg><span class="lbl">真ん中ぞろえ</span></button>
+        <button type="button" class="mini" data-al="bottom" title="下ぞろえ（アイコンの下をそろえる）" aria-label="下ぞろえ"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 14.25h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="3.5" y="2" width="3.5" height="10" rx="1" fill="currentColor"/><rect x="9" y="6" width="3.5" height="6" rx="1" fill="currentColor"/></svg><span class="lbl">下ぞろえ</span></button>
+        <span class="sep" aria-hidden="true"></span>
+        <button type="button" class="mini" data-al="hdist" title="横に等間隔（左端と右端の人はそのまま。3人以上で使えます）" aria-label="横に等間隔"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.75 1.5v13M14.25 1.5v13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="4.25" y="4" width="2.75" height="8" rx=".75" fill="currentColor"/><rect x="9" y="4" width="2.75" height="8" rx=".75" fill="currentColor"/></svg><span class="lbl">横に等間隔</span></button>
+        <button type="button" class="mini" data-al="vdist" title="縦に等間隔（いちばん上と下の人はそのまま。3人以上で使えます）" aria-label="縦に等間隔"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 1.75h13M1.5 14.25h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="4" y="4.25" width="8" height="2.75" rx=".75" fill="currentColor"/><rect x="4" y="9" width="8" height="2.75" rx=".75" fill="currentColor"/></svg><span class="lbl">縦に等間隔</span></button>
+      </div>
+      <div id="selLay" class="selLay" hidden>
+        <span class="segCap">名前とバッジ</span>
+        <div class="seg" role="group" aria-label="名前とバッジの並べ方">
+          <button type="button" data-v="row" aria-pressed="false">横並び</button><button type="button" data-v="stack" aria-pressed="false">縦2段</button>
+        </div>
+      </div>
+      <button type="button" class="mini" id="selReset" hidden>位置を戻す</button>
     </div>
   </div>
 </div>
@@ -514,6 +583,9 @@ let state = defaultState();
 let bgImg = null;
 const iconCache = new Map();
 let selectedId = null, zoomMode = "fit", lastNodes = [], seqCounter = 1;
+/* 選んでいる人（複数可）。selectedId はそのうち最後に選んだ人で、一覧のスクロールなどに使う */
+const selIds = new Set();
+let multiMode = false;         /* スマホの「複数選択」：タップするたびに足したり外したりする */
 let storageOK = false;
 
 /* ============================================================
@@ -783,12 +855,20 @@ function tierOf(badge){
   return {t:ts[ts.length-1], i:ts.length-1};
 }
 const visibleItems = () => state.items.filter(it => it.on !== false);
+/* 名前とバッジの並べ方。1人ずつ決めていなければ全体の設定に従う */
+const layOf = it => (it.lay === "row" || it.lay === "stack") ? it.lay : state.labelLayout;
+/* 1人ずつ切り替える。全体の設定と同じ方を選んだら「全体に従う」に戻す */
+function setLay(items, v){
+  v = v === "stack" ? "stack" : "row";
+  items.forEach(it => { it.lay = v === state.labelLayout ? null : v; });
+}
 
 /* ============================================================
    1件分の寸法
    ============================================================ */
-function metrics(it){
+function metrics(it, lay){
   const {t} = tierOf(it.badge);
+  lay = lay || layOf(it);
   const icon = clamp(num(state.baseIcon, 215) * num(it.scale ?? t.scale, 1), 8, 20000);
   const label = it.name || "";
 
@@ -809,7 +889,7 @@ function metrics(it){
 
   /* 名前とバッジのかたまり（lb）の位置と大きさ。アイコンの左上を原点にする */
   let lbX, lbY, lbW, lbH, nameX, nameCY, chipX, chipCY;
-  if(state.labelLayout === "stack"){
+  if(lay === "stack"){
     /* 縦2段：名前の下にバッジ。どちらもアイコンの中心線にそろえる */
     const gapV = label ? nameFS * 0.10 : 0;
     const mid = icon/2 + num(t.vx, 0) * icon;
@@ -856,6 +936,7 @@ function layout(){
     items.sort((a,b)=> num(b.badge,0) - num(a.badge,0) || num(a.seq,0) - num(b.seq,0));
   }
 
+  /* 1行の人数とマスの使い方は、全体の並べ方で決める（1人ずつ変えた人も同じマスに入る） */
   const stack = state.labelLayout === "stack";
 
   /* 1) 行に詰める。段が変わったら必ず行を切るので、1行には同じ段の人だけが並ぶ */
@@ -902,7 +983,11 @@ function layout(){
     r.items.forEach((it, ci)=>{
       const m = metrics(it);
       const cell = ax + lead + ci*(colW + cg);
-      const want = stack ? Math.max(ax, cell + (colW - m.w)/2) : cell;
+      /* 並べ方を1人だけ変えた人は、全体の並べ方だったときとアイコンの位置が同じになるように置く */
+      const own = layOf(it) !== state.labelLayout;
+      const mg = own ? metrics(it, state.labelLayout) : m;
+      const wantG = stack ? Math.max(ax, cell + (colW - mg.w)/2) : cell;
+      const want = own ? Math.max(ax, wantG + mg.ox - m.ox) : wantG;
       const x = Math.max(want, prevRight + cg);
       prevRight = x + m.w;
       const off = it.off || {x:0,y:0};
@@ -989,14 +1074,23 @@ function render(opts){
                      num(state.area.w,0), num(state.area.h,0));
       ctx.restore();
     }
-    const sel = selectedId && nodes.find(n => n.it.id === selectedId);
-    if(sel){
+    nodes.forEach(sel=>{
+      if(!selIds.has(sel.it.id)) return;
       const p = px(5), r = [sel.x - p, sel.y - p, sel.m.w + p*2, sel.m.h + p*2];
       ctx.save();
       ctx.lineWidth = px(4); ctx.strokeStyle = "rgba(255,255,255,.9)";
       ctx.strokeRect(r[0], r[1], r[2], r[3]);
       ctx.setLineDash([px(6), px(4)]); ctx.lineWidth = px(2); ctx.strokeStyle = "#7b4fd6";
       ctx.strokeRect(r[0], r[1], r[2], r[3]);
+      ctx.restore();
+    });
+    /* 範囲選択の枠 */
+    if(marq && marq.on){
+      const x = Math.min(marq.a.x, marq.b.x), y = Math.min(marq.a.y, marq.b.y);
+      const w = Math.abs(marq.b.x - marq.a.x), h = Math.abs(marq.b.y - marq.a.y);
+      ctx.save();
+      ctx.fillStyle = "rgba(123,79,214,.14)"; ctx.fillRect(x, y, w, h);
+      ctx.lineWidth = px(1.5); ctx.strokeStyle = "#7b4fd6"; ctx.strokeRect(x, y, w, h);
       ctx.restore();
     }
   }
@@ -1073,6 +1167,7 @@ function fitToArea(opts){
 function applyZoom(){
   const stage = $("#stage");
   if(!stage.clientWidth || !stage.clientHeight) return;   /* タブで隠れている */
+  if((drag || marq) && cv.style.width) return;   /* ドラッグ中に表示倍率が変わると位置がずれるので待つ */
   let s = zoomMode === "fit"
     ? Math.min((stage.clientWidth-40)/cv.width, (stage.clientHeight-40)/cv.height, 1)
     : parseFloat(zoomMode);
@@ -1104,7 +1199,7 @@ function rescaleGeometry(oldW, oldH, newW, newH){
 /* ============================================================
    ドラッグ
    ============================================================ */
-let drag = null;
+let drag = null, marq = null;   /* marq＝空いた所からの範囲選択 */
 /* 動かし始めは画面上の距離で判定する。指はぶれやすいので大きめにとる */
 const DRAG_THRESHOLD = { mouse:4, touch:8 };
 function toCanvas(ev){
@@ -1121,11 +1216,28 @@ function hit(p){
   }
   return null;
 }
-function endDrag(ev){
+/* 範囲選択は、アイコンの中心が枠に入った人を選ぶ */
+function inMarquee(n, a, b){
+  const cx = n.x + n.m.ox + n.m.icon/2, cy = n.y + n.m.oy + n.m.icon/2;
+  return cx >= Math.min(a.x, b.x) && cx <= Math.max(a.x, b.x)
+      && cy >= Math.min(a.y, b.y) && cy <= Math.max(a.y, b.y);
+}
+function endDrag(ev, cancelled){
   if(drag){
-    const moved = drag.moved;
+    const d = drag;
     drag = null; cv.className = "grab";
-    if(moved){ render(); save(); }
+    if(d.moved){ render(); save(); }
+    else if(cancelled) render();
+    else if(d.after === "only") setSelected(d.it.id);      /* 複数選択中に1人をクリック → その人だけ */
+    else if(d.after === "drop"){ toggleSel(d.it.id); render(); }   /* Shift+クリックで外す */
+    else render();
+  }
+  if(marq){
+    const m = marq;
+    marq = null;
+    /* 空いた所をクリックしただけなら選択を外す（足していくモードのときは外さない） */
+    if(!m.on && !m.add && !cancelled) setSelected(null, {noScroll:true});
+    else render();
   }
   if(ev) try{ cv.releasePointerCapture(ev.pointerId); }catch(e){}
 }
@@ -1133,36 +1245,64 @@ cv.addEventListener("pointermove", ev=>{
   if(drag){
     if(!drag.moved && Math.hypot(ev.clientX - drag.sx, ev.clientY - drag.sy) < drag.th) return;
     const p = toCanvas(ev);
-    const dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+    /* 動かす量は整数にそろえる（そろえた人どうしの小数のずれ具合を崩さない） */
+    const dx = Math.round(p.x - drag.start.x), dy = Math.round(p.y - drag.start.y);
     drag.moved = true;
-    setOff(drag.it, drag.base.x + dx, drag.base.y + dy);
+    /* 選んでいる人をまとめて動かす */
+    drag.group.forEach(g => setOff(g.it, g.x + dx, g.y + dy));
     render({hit:false});
-    const row = rowOf(drag.it);
-    if(row) syncPos(row, drag.it);
+    syncRows(drag.group.map(g => g.it));
+    return;
+  }
+  if(marq){
+    if(!marq.on && Math.hypot(ev.clientX - marq.sx, ev.clientY - marq.sy) < marq.th) return;
+    marq.on = true;
+    marq.b = toCanvas(ev);
+    const hits = lastNodes.filter(n => inMarquee(n, marq.a, marq.b)).map(n => n.it.id);
+    replaceSel(marq.add ? [...new Set([...marq.base, ...hits])] : hits);
+    render({hit:false});
     return;
   }
   cv.className = hit(toCanvas(ev)) ? "grab" : "";
 });
 cv.addEventListener("pointerdown", ev=>{
+  if(ev.button > 0) return;                 /* 右クリックなどは使わない */
   const p = toCanvas(ev), n = hit(p);
-  if(!n){ setSelected(null); return; }
-  setSelected(n.it.id);
-  const off = n.it.off || {x:0,y:0};
-  drag = { it:n.it, start:p, base:{x:num(off.x,0), y:num(off.y,0)}, moved:false,
-           sx:ev.clientX, sy:ev.clientY,
-           th: ev.pointerType === "mouse" ? DRAG_THRESHOLD.mouse : DRAG_THRESHOLD.touch };
+  /* Shift／Ctrl（Macは⌘）を押しながら、またはスマホの「複数選択」中は、選択に足したり外したりする */
+  const add = ev.shiftKey || ev.ctrlKey || ev.metaKey || multiMode;
+  const th = ev.pointerType === "mouse" ? DRAG_THRESHOLD.mouse : DRAG_THRESHOLD.touch;
   try{ cv.setPointerCapture(ev.pointerId); }catch(e){}
+  if(!n){
+    marq = { a:p, b:p, sx:ev.clientX, sy:ev.clientY, th, on:false, add, base:[...selIds] };
+    return;
+  }
+  const id = n.it.id;
+  let after = null;
+  if(add){
+    if(selIds.has(id)){ after = "drop"; selectedId = id; }
+    else toggleSel(id);
+  } else if(selIds.has(id)){
+    selectedId = id;
+    if(selIds.size > 1) after = "only";
+  } else {
+    replaceSel([id], id);
+    const row = rowOf(n.it);
+    if(row) row.scrollIntoView({block:"nearest"});
+  }
+  render();
+  const group = selectedItems().map(it => ({ it, x:num(it.off && it.off.x, 0), y:num(it.off && it.off.y, 0) }));
+  drag = { it:n.it, group, start:p, moved:false, sx:ev.clientX, sy:ev.clientY, th, after };
   cv.className = "grabbing";
 });
-cv.addEventListener("pointerup", endDrag);
-cv.addEventListener("pointercancel", endDrag);
+cv.addEventListener("pointerup", ev => endDrag(ev, false));
+cv.addEventListener("pointercancel", ev => endDrag(ev, true));
 
 /* ============================================================
    リスナー一覧 UI
    ============================================================ */
 function newItem(){
   return { id:"i"+Math.random().toString(36).slice(2,9), seq:seqCounter++,
-           name:"", badge:3.00, icon:null, scale:null, off:null, on:true };
+           name:"", badge:3.00, icon:null, scale:null, off:null, on:true, lay:null };
 }
 function badgeOptions(){
   const f = document.createDocumentFragment();
@@ -1176,23 +1316,65 @@ function badgeOptions(){
 /* 選択の切り替えだけで一覧を作り直さない */
 function markSelected(){
   $("#items").querySelectorAll(".item").forEach(el =>
-    el.classList.toggle("sel", !!el.__item && el.__item.id === selectedId));
+    el.classList.toggle("sel", !!el.__item && selIds.has(el.__item.id)));
 }
-function setSelected(id, opts){
-  selectedId = id;
+/* 選択をまるごと入れ替える。描き直しは呼び出し側で */
+function replaceSel(ids, primary){
+  selIds.clear();
+  ids.forEach(id => selIds.add(id));
+  selectedId = (primary && selIds.has(primary)) ? primary
+    : (selIds.has(selectedId) ? selectedId : (ids.length ? ids[ids.length-1] : null));
   markSelected();
+}
+/* 1人だけ選ぶ（null で選択を外す） */
+function setSelected(id, opts){
+  replaceSel(id ? [id] : [], id);
   if(id && !(opts && opts.noScroll)){
     const cur = rowOf(state.items.find(x => x.id === id));
     if(cur) cur.scrollIntoView({block:"nearest"});
   }
   render();
 }
-/* 描き直しは呼び出し側に任せる軽い版。選択が変わったら true */
+/* 描き直しは呼び出し側に任せる軽い版。選択が変わったら true。
+   すでに複数選んでいる中の人なら、選択はそのままにする */
 function selectQuiet(id){
-  if(selectedId === id) return false;
-  selectedId = id;
-  markSelected();
+  if(selIds.has(id)){ selectedId = id; return false; }
+  replaceSel([id], id);
   return true;
+}
+/* 選択に足す／外す */
+function toggleSel(id){
+  if(selIds.has(id)){
+    selIds.delete(id);
+    if(selectedId === id) selectedId = [...selIds].pop() || null;
+  } else {
+    selIds.add(id);
+    selectedId = id;
+  }
+  markSelected();
+}
+function unselect(id){
+  if(!selIds.delete(id)) return;
+  if(selectedId === id) selectedId = [...selIds].pop() || null;
+  markSelected();
+}
+/* 選んでいて画像に出ている人（一覧の順） */
+function selectedItems(){
+  return state.items.filter(it => selIds.has(it.id) && it.on !== false);
+}
+/* 一覧で Ctrl（Macは⌘）＋クリックは1人ずつ足す／外す、Shift＋クリックはそこまでまとめて選ぶ */
+const isListMod = e => (e.ctrlKey || e.metaKey || e.shiftKey)
+  && !e.target.closest('input[type="text"],input[type="number"],select,.det');
+function listSelect(it, range){
+  if(it.on === false) return;              /* 画像に出ていない人は選べない */
+  const ids = state.items.map(x => x.id);
+  const a = ids.indexOf(selectedId), b = ids.indexOf(it.id);
+  if(range && a >= 0 && b >= 0){
+    const [lo, hi] = a < b ? [a, b] : [b, a];
+    const add = state.items.slice(lo, hi+1).filter(x => x.on !== false).map(x => x.id);
+    replaceSel([...new Set([...selIds, ...add])], it.id);
+  } else toggleSel(it.id);
+  render();
 }
 
 /* 行の詳細（大きさ・位置・順番・削除）。開けるのは同時に1人だけ。保存はしない */
@@ -1221,8 +1403,16 @@ const ITEM_HTML = `
   <div class="thumb" data-act="pick" title="タップで画像を選ぶ（画像のドロップも可）"></div>
   <input type="text" data-act="name" placeholder="表示名（絵文字もOK）" aria-label="名前">
   <select data-act="badge" aria-label="バッジ"></select>
-  <button type="button" class="more" data-act="more" aria-expanded="false" aria-label="大きさ・位置・削除"></button>
+  <button type="button" class="more" data-act="more" aria-expanded="false" aria-label="並べ方・大きさ・位置・削除"></button>
   <div class="det" hidden>
+    <div class="detRow">
+      <div class="fld">名前とバッジ
+        <div class="seg" role="group" aria-label="名前とバッジの並べ方">
+          <button type="button" data-act="lay" data-v="row" aria-pressed="false">横並び</button><button type="button" data-act="lay" data-v="stack" aria-pressed="false">縦2段</button>
+        </div>
+        <span class="layNote"></span>
+      </div>
+    </div>
     <div class="detRow">
       <label class="fld">大きさ <select data-act="scaleMode">
         <option value="auto">自動</option><option value="manual">手動</option>
@@ -1260,8 +1450,18 @@ function renderList(){
     syncItemRow(el, it, idx, manual);
     el.addEventListener("input",  e=>onItemInput(e, it, el));
     el.addEventListener("change", e=>onItemInput(e, it, el));
-    el.addEventListener("click",  e=>onItemClick(e, it));
-    el.addEventListener("focusin", ()=>{ if(selectQuiet(it.id)) render(); });
+    /* Ctrl／Shift＋クリックで選ぶときは、欄にフォーカスを移さない */
+    el.addEventListener("mousedown", e=>{ if(isListMod(e)) e.preventDefault(); });
+    el.addEventListener("click",  e=>{
+      if(isListMod(e)){ e.preventDefault(); listSelect(it, e.shiftKey); return; }
+      /* 行のどこを押しても、その人をプレビューで選ぶ（表示のチェックと削除は除く） */
+      if(!e.target.closest(".on, [data-act=del]") && it.on !== false && selectQuiet(it.id)) render();
+      onItemClick(e, it);
+    });
+    el.addEventListener("focusin", e=>{
+      if(e.target.dataset.act === "on") return;
+      if(it.on !== false && selectQuiet(it.id)) render();
+    });
     const th = el.querySelector(".thumb");
     th.addEventListener("dragover",  e=>{ e.preventDefault(); th.classList.add("drop"); });
     th.addEventListener("dragleave", ()=> th.classList.remove("drop"));
@@ -1277,8 +1477,14 @@ function syncItemRow(el, it, idx, manual){
   const q = s => el.querySelector(s);
   /* 入力中の欄は書き換えない（カーソルが飛ばないように） */
   const setVal = (inp, v) => { if(document.activeElement !== inp) inp.value = v; };
-  el.classList.toggle("sel", it.id === selectedId);
+  el.classList.toggle("sel", selIds.has(it.id));
   el.classList.toggle("off", it.on === false);
+  /* 名前とバッジの並べ方：今の見え方を押した状態にし、全体と違うときは「この人だけ」 */
+  const lay = layOf(it), own = lay !== state.labelLayout;
+  el.querySelectorAll("[data-act=lay]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === lay)));
+  const note = q(".layNote");
+  note.textContent = own ? "この人だけ" : "全体と同じ";
+  note.classList.toggle("own", own);
   q("[data-act=on]").checked = it.on !== false;
   setVal(q("[data-act=name]"), it.name || "");
   q("[data-act=badge]").value = String(num(it.badge, 3));
@@ -1309,7 +1515,11 @@ function refreshRow(it){
 function onItemInput(e, it, el){
   const a = e.target.dataset.act;
   if(a === "name"){ it.name = e.target.value; render(); save(); }
-  else if(a === "on"){ it.on = e.target.checked; el.classList.toggle("off", !it.on); render(); save(); }
+  else if(a === "on"){
+    it.on = e.target.checked; el.classList.toggle("off", !it.on);
+    if(!it.on) unselect(it.id);            /* 画像から外した人は選択からも外す */
+    render(); save();
+  }
   else if(a === "badge"){
     it.badge = clamp(num(parseFloat(e.target.value), 3), BADGE_MIN, BADGE_MAX);
     render(); refreshRow(it); save();
@@ -1340,6 +1550,7 @@ function onItemClick(e, it){
   const a = e.target.dataset.act;
   if(a === "pick"){ pickIconFor = it; $("#iconPicker").value = ""; $("#iconPicker").click(); }
   else if(a === "more")  toggleOpen(it);
+  else if(a === "lay"){ setLay([it], e.target.dataset.v); render(); refreshRow(it); save(); }
   else if(a === "del")   deleteItem(it);
   else if(a === "reset") resetPos(it);
   else if(a === "up" || a === "down"){
@@ -1355,7 +1566,7 @@ function deleteItem(it){
   if(idx < 0) return;
   const img = iconCache.get(it.id);
   state.items.splice(idx,1); iconCache.delete(it.id); reseq();
-  if(selectedId === it.id) selectedId = null;
+  unselect(it.id);
   if(openId === it.id) openId = null;
   render(); renderList(); save();
   setStatus(`「${it.name || "名前なし"}」を削除しました`, {
@@ -1377,20 +1588,66 @@ function rowOf(it){
   if(!it) return null;
   return [...$("#items").children].find(e => e.__item === it) || null;
 }
+/* 小数第2位まで持つ（そろえたときに1px未満のずれも残さない）。欄には整数で出す */
 function setOff(it, x, y){
-  x = clamp(Math.round(num(x, 0)), -20000, 20000);
-  y = clamp(Math.round(num(y, 0)), -20000, 20000);
+  const r = v => clamp(Math.round(num(v, 0)*100)/100, -20000, 20000);
+  x = r(x); y = r(y);
   it.off = (x || y) ? {x, y} : null;
 }
-function nudge(it, dx, dy){
-  if(!it) return;
-  const off = it.off || {x:0, y:0};
-  setOff(it, num(off.x,0) + dx, num(off.y,0) + dy);
-  selectQuiet(it.id);
-  render();
-  const row = rowOf(it);
-  if(row) syncPos(row, it);
-  save();
+function syncRows(items){
+  items.forEach(it => { const row = rowOf(it); if(row) syncPos(row, it); });
+}
+function nudgeMany(items, dx, dy){
+  items.forEach(it => {
+    const off = it.off || {x:0, y:0};
+    setOff(it, num(off.x,0) + dx, num(off.y,0) + dy);
+  });
+  render(); syncRows(items); save();
+}
+/* 位置をまとめて変えたあとの「元に戻す」 */
+function offUndo(list){
+  return { label:"元に戻す", run(){
+    list.forEach(([it, o]) => { it.off = o; });
+    render(); syncRows(list.map(x => x[0])); save();
+  }};
+}
+/* そろえる・等間隔。アイコンの丸を基準にする */
+const ALIGN_NAME = { top:"上ぞろえ", middle:"真ん中ぞろえ", bottom:"下ぞろえ",
+                     hdist:"横に等間隔", vdist:"縦に等間隔" };
+function alignSel(mode){
+  const bs = lastNodes.filter(n => selIds.has(n.it.id))
+    .map(n => ({ it:n.it, x:n.x + n.m.ox, y:n.y + n.m.oy, s:n.m.icon }));
+  const dist = mode === "hdist" || mode === "vdist";
+  if(!ALIGN_NAME[mode] || bs.length < (dist ? 3 : 2)) return;
+  const before = bs.map(b => [b.it, b.it.off ? {...b.it.off} : null]);
+  const move = (b, dx, dy) => {
+    const o = b.it.off || {x:0, y:0};
+    setOff(b.it, num(o.x,0) + dx, num(o.y,0) + dy);
+  };
+  if(mode === "top"){
+    const t = Math.min(...bs.map(b => b.y));
+    bs.forEach(b => move(b, 0, t - b.y));
+  } else if(mode === "bottom"){
+    const t = Math.max(...bs.map(b => b.y + b.s));
+    bs.forEach(b => move(b, 0, t - (b.y + b.s)));
+  } else if(mode === "middle"){
+    const t = (Math.min(...bs.map(b => b.y)) + Math.max(...bs.map(b => b.y + b.s))) / 2;
+    bs.forEach(b => move(b, 0, t - (b.y + b.s/2)));
+  } else {
+    /* 端の2人はそのままにして、アイコンどうしのすき間を同じにする */
+    const h = mode === "hdist", pos = b => h ? b.x : b.y;
+    bs.sort((p, q) => (pos(p) + p.s/2) - (pos(q) + q.s/2));
+    const first = bs[0], last = bs[bs.length-1];
+    const gap = (pos(last) + last.s - pos(first) - bs.reduce((a, b) => a + b.s, 0)) / (bs.length - 1);
+    let at = pos(first);
+    bs.forEach(b => {
+      const d = at - pos(b);
+      if(h) move(b, d, 0); else move(b, 0, d);
+      at += b.s + gap;
+    });
+  }
+  render(); syncRows(bs.map(b => b.it)); save();
+  setStatus(`${bs.length}人を${ALIGN_NAME[mode]}にしました`, offUndo(before));
 }
 function resetPos(it){
   if(!it) return;
@@ -1409,10 +1666,8 @@ function syncPos(el, it){
   ix.classList.toggle("moved", x !== 0);
   iy.classList.toggle("moved", y !== 0);
   el.querySelector("[data-act=reset]").hidden = !it.off;
-  el.classList.toggle("tuned", !!it.off || it.scale != null);   /* ⌄ の右上の点 */
-}
-function selectedItem(){
-  return state.items.find(x => x.id === selectedId && x.on !== false) || null;
+  /* ⌄ の右上の点：位置・大きさ・並べ方のどれかを、その人だけ変えている */
+  el.classList.toggle("tuned", !!it.off || it.scale != null || layOf(it) !== state.labelLayout);
 }
 
 /* 一覧の見出しの人数と、「動かした位置を全部戻す」 */
@@ -1426,35 +1681,85 @@ function updateListMeta(){
   b.textContent = `動かした位置を全部戻す（${moved}人）`;
 }
 
-/* プレビュー下の選択バー */
+/* プレビュー下の選択バー。選んだ人数で中身を入れ替える（高さは変えない） */
 function updateSelBar(){
-  const it = selectedItem();
-  $("#selReset").hidden = !(it && it.off);
-  $("#selEdit").hidden = !it;
-  const hover = !!(window.matchMedia && matchMedia("(hover:hover)").matches);
-  $("#selMsg").textContent = it ? "選択中：" + (it.name || "（名前なし）")
-    : hover ? "クリックで選択・ドラッグか矢印キーで移動" : "人物をタップで選択・ドラッグで移動";
+  const items = selectedItems(), n = items.length;
+  const touch = !!(window.matchMedia && matchMedia("(hover:none)").matches);
+  $("#selMsg").textContent = n > 1 ? `${n}人を選択中`
+    : n === 1 ? "選択中：" + (items[0].name || "（名前なし）")
+    : multiMode ? "選びたい人を順にタップ（もう一度タップで外す）"
+    : touch ? "タップで選択・ドラッグで移動。空いた所をなぞると複数選択"
+    : "クリックで選択・ドラッグで移動。Shift+クリックや、空いた所をドラッグで複数選択";
+  $("#selAlign").hidden = n < 2;
+  $("#selAlign").querySelectorAll('[data-al$="dist"]').forEach(b => { b.disabled = n < 3; });
+  $("#selLay").hidden = n < 1;
+  const lays = new Set(items.map(layOf));
+  $("#selLay").querySelectorAll("button[data-v]").forEach(b =>
+    b.setAttribute("aria-pressed", String(lays.size === 1 && lays.has(b.dataset.v))));
+  $("#selReset").hidden = !items.some(it => it.off);
+  $("#selEdit").hidden = n !== 1;
+  const mb = $("#selMulti");
+  mb.hidden = !touch && !multiMode;
+  mb.setAttribute("aria-pressed", String(multiMode));
 }
-$("#selReset").addEventListener("click", ()=> resetPos(selectedItem()));
+$("#selAlign").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-al]");
+  if(b && !b.disabled) alignSel(b.dataset.al);
+});
+$("#selLay").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-v]");
+  const items = selectedItems();
+  if(!b || !items.length) return;
+  const before = items.map(it => [it, it.lay]);
+  setLay(items, b.dataset.v);
+  render(); items.forEach(refreshRow); save();
+  if(items.length > 1){
+    setStatus(`${items.length}人を${b.dataset.v === "stack" ? "縦2段" : "横並び"}にしました`, {
+      label:"元に戻す",
+      run(){ before.forEach(([it, l]) => { it.lay = l; }); render(); items.forEach(refreshRow); save(); }
+    });
+  }
+});
+$("#selReset").addEventListener("click", ()=>{
+  const items = selectedItems().filter(it => it.off);
+  if(!items.length) return;
+  const before = items.map(it => [it, it.off]);
+  items.forEach(it => { it.off = null; });
+  render(); syncRows(items); save();
+  if(items.length > 1) setStatus(`${items.length}人の位置を戻しました`, offUndo(before));
+});
 $("#selEdit").addEventListener("click", ()=>{
-  const it = selectedItem();
-  if(!it) return;
-  setOpen(it.id);
+  const items = selectedItems();
+  if(items.length !== 1) return;
+  setOpen(items[0].id);
   setPane("edit");
 });
+$("#selMulti").addEventListener("click", ()=>{
+  multiMode = !multiMode;
+  updateSelBar();
+});
 
-/* PC：人物を選んだあと矢印キーで動かす（1px、Shiftで10px）。Escで選択を解除 */
+/* PC：人物を選んだあと矢印キーで動かす（1px、Shiftで10px）。Escで選択を解除。
+   Ctrl+A（Macは⌘+A）で画像に出ている全員を選ぶ */
 document.addEventListener("keydown", e=>{
   if(!$("#modal").hidden) return;
   const t = e.target, tag = ((t && t.tagName) || "").toLowerCase();
   if(tag === "input" || tag === "select" || tag === "textarea" || (t && t.isContentEditable)) return;
-  if(e.key === "Escape"){ if(selectedId) setSelected(null, {noScroll:true}); return; }
+  if(e.key === "Escape"){ if(selIds.size) setSelected(null, {noScroll:true}); return; }
+  if((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === "a" || e.key === "A")){
+    const vis = visibleItems();
+    if(!vis.length || (document.body.classList.contains("pane-edit") && innerWidth <= 860)) return;
+    e.preventDefault();
+    replaceSel(vis.map(it => it.id), selectedId);
+    render();
+    return;
+  }
   const d = {ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0]}[e.key];
-  const it = d && selectedItem();
-  if(!it) return;
+  const items = d ? selectedItems() : [];
+  if(!items.length) return;
   e.preventDefault();
   const s = e.shiftKey ? 10 : 1;
-  nudge(it, d[0]*s, d[1]*s);
+  nudgeMany(items, d[0]*s, d[1]*s);
 });
 
 let pickIconFor = null;
@@ -1510,7 +1815,7 @@ $("#iconPickerMulti").addEventListener("change", e=> addFromFiles(e.target.files
 })();
 $("#addItem").addEventListener("click", ()=>{
   const it = newItem();
-  state.items.push(it); reseq(); selectedId = it.id;
+  state.items.push(it); reseq(); replaceSel([it.id], it.id);
   render(); renderList(); save();
   const last = $("#items").lastElementChild;
   if(last) last.querySelector("[data-act=name]").focus();
@@ -1530,6 +1835,8 @@ const NUMS = [["min","この値以上","0.01",1],["scale","アイコン倍率","
               ["lx","名前の左右(%)","1",100],["ly","名前の上下(%)","1",100],["ow","縁の太さ(%)","1",100]];
 /* 「1行」と名前X%／名前Y% は横並びと縦2段で別の値を持つ。切り替えても、それぞれの調整が残る */
 const posKey = k => state.labelLayout === "stack" ? ({cols:"vcols", lx:"vx", ly:"vy"}[k] || k) : k;
+/* 1人だけ並べ方を変えた人のための、もう片方の名前位置（data-alt の欄） */
+const altKey = k => state.labelLayout === "stack" ? k : ({lx:"vx", ly:"vy"}[k] || k);
 const COLORS = [["ring","アイコン枠"],["outline","名前の縁"],["text","名前の文字"],
                 ["badge","バッジ地"],["badgeBorder","バッジ枠"],["star","星"]];
 /* 段ごとに折りたたむ。見出しは「●段の色・段の名前・今N人」 */
@@ -1545,6 +1852,9 @@ const TIER_HTML = `
       <div><label>1行の人数</label><input type="number" step="1" min="1" data-k="cols"></div>
       <div><label class="lxLbl">名前の左右(%)</label><input type="number" step="1" data-k="lx"></div>
       <div><label class="lyLbl">名前の上下(%)</label><input type="number" step="1" data-k="ly"></div>
+      <p class="altCap alt" hidden></p>
+      <div class="alt" hidden><label class="altXLbl"></label><input type="number" step="1" data-k="lx" data-alt="1"></div>
+      <div class="alt" hidden><label class="altYLbl"></label><input type="number" step="1" data-k="ly" data-alt="1"></div>
       <div style="grid-column:1/-1"><label>並べ方</label><select data-k="flow">
         <option value="row">横に流す</option><option value="col">縦に流す（左の列から）</option>
       </select></div>
@@ -1572,7 +1882,7 @@ function buildTier(t){
   el.addEventListener("input", e=>{
     const k = e.target.dataset.k; if(!k) return;
     if(e.target.type === "number"){
-      const key = posKey(k), spec = TIER_SPEC[key];
+      const key = e.target.dataset.alt ? altKey(k) : posKey(k), spec = TIER_SPEC[key];
       const raw = parseFloat(e.target.value);
       if(!Number.isFinite(raw)){ e.target.classList.add("bad"); return; }  /* 空欄は state に触れない */
       e.target.classList.remove("bad");
@@ -1612,8 +1922,10 @@ function buildTier(t){
 function syncTier(el){
   const t = el.__tier;
   NUMS.concat([["cols","","",1]]).forEach(([k,,,mul])=>{
-    const inp = el.querySelector(`[data-k="${k}"]`);
+    const inp = el.querySelector(`[data-k="${k}"]:not([data-alt])`);
     if(inp) inp.value = String(Math.round(num(t[posKey(k)], 0) * (mul||1) * 1000)/1000);
+    const alt = el.querySelector(`[data-k="${k}"][data-alt]`);
+    if(alt) alt.value = String(Math.round(num(t[altKey(k)], 0) * (mul||1) * 1000)/1000);
   });
   el.querySelector('[data-k="flow"]').value = t.flow === "col" ? "col" : "row";
   el.querySelector('[data-k="label"]').value = t.label || "";
@@ -1627,6 +1939,10 @@ function syncTier(el){
   const stack = state.labelLayout === "stack";
   el.querySelector(".lxLbl").textContent = stack ? "左右のずれ(%)" : "名前の左右(%)";
   el.querySelector(".lyLbl").textContent = stack ? "アイコンとのすき間(%)" : "名前の上下(%)";
+  /* 1人だけ並べ方を変えた人がこの段にいるときだけ、もう片方の名前位置も出す（表示は updateTierCounts） */
+  el.querySelector(".altCap").textContent = stack ? "横並びにした人の名前の位置" : "縦2段にした人の名前の位置";
+  el.querySelector(".altXLbl").textContent = stack ? "名前の左右(%)" : "左右のずれ(%)";
+  el.querySelector(".altYLbl").textContent = stack ? "名前の上下(%)" : "アイコンとのすき間(%)";
 }
 function numberTiers(){
   [...$("#tiers").children].forEach((el,i)=>{
@@ -1638,12 +1954,17 @@ function numberTiers(){
 }
 /* 段ごとに今この画像に何人いるかを出す。人数が毎回変わるので目安になる */
 function updateTierCounts(){
-  const n = state.tiers.map(()=>0);
-  visibleItems().forEach(it => n[tierOf(it.badge).i]++);
+  const n = state.tiers.map(()=>0), alt = state.tiers.map(()=>false);
+  visibleItems().forEach(it => {
+    const i = tierOf(it.badge).i;
+    n[i]++;
+    if(layOf(it) !== state.labelLayout) alt[i] = true;
+  });
   [...$("#tiers").children].forEach(el=>{
     const i = state.tiers.indexOf(el.__tier);
     const c = el.querySelector(".cnt");
     if(c) c.textContent = i < 0 ? "" : `今 ${n[i]}人`;
+    el.querySelectorAll(".alt").forEach(x => { x.hidden = !(i >= 0 && alt[i]); });
   });
 }
 function sortTiers(){ state.tiers.sort((a,b)=> num(b.min,0) - num(a.min,0)); }
@@ -1718,8 +2039,21 @@ function wireControls(){
   $("#labelLayout").addEventListener("change", e=>{
     state.labelLayout = e.target.value === "stack" ? "stack" : "row";
     [...$("#tiers").children].forEach(syncTier);   /* 名前X%・Y% を今の並べ方の値で表示し直す */
+    state.items.forEach(refreshRow);               /* 一覧の「横並び／縦2段」と「この人だけ」 */
+    /* 1人ずつ変えた人はそのまま。全体を何度切り替えても、その人の設定は残る */
+    const own = state.items.filter(it => it.on !== false && layOf(it) !== state.labelLayout);
     /* 縦2段は1人ぶんが縦に長くなるので、切り替えたら配置エリアに収め直す */
-    if(visibleItems().length) fitToArea(); else { render(); save(); }
+    if(visibleItems().length) fitToArea({quiet: own.length > 0}); else { render(); save(); }
+    if(own.length){
+      setStatus(`1人ずつ設定した${own.length}人は、そのままにしています`, {
+        label:"全員そろえる",
+        run(){
+          state.items.forEach(it => { it.lay = null; });
+          state.items.forEach(refreshRow);
+          fitToArea({quiet:true});
+        }
+      });
+    }
   });
   $("#fontSel").addEventListener("change", e=>{
     if(e.target.value === "__custom"){ $("#fontCustomWrap").style.display = "block"; $("#fontCustom").focus(); }
@@ -1806,20 +2140,22 @@ function stamp(){
   return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}`;
 }
 /* ---- 書き出しパネル ---- */
-function openModal(title, hint, node){
-  $("#mtitle").textContent = title;
-  $("#mhint").textContent = hint;
-  const b = $("#mbody");
-  b.textContent = "";
-  b.append(node);
-  $("#modal").hidden = false;
-}
-function closeModal(){
+function clearModalBody(){
   const b = $("#mbody");
   b.querySelectorAll("img").forEach(im=>{
     if(im.src.startsWith("blob:")) URL.revokeObjectURL(im.src);
   });
   b.textContent = "";
+}
+function openModal(title, hint, node){
+  $("#mtitle").textContent = title;
+  $("#mhint").textContent = hint;
+  clearModalBody();
+  $("#mbody").append(node);
+  $("#modal").hidden = false;
+}
+function closeModal(){
+  clearModalBody();
   $("#modal").hidden = true;
 }
 $("#mclose").addEventListener("click", closeModal);
@@ -1895,6 +2231,290 @@ $("#dlOver").addEventListener("click", ()=>{
   download(`背景01_${stamp()}.png`);
   render();
 });
+
+/* ============================================================
+   Discord・X に送る
+   ============================================================ */
+/* ウェブフックURLや送る文は、この端末のこのブラウザだけに置く（設定の書き出しや他の端末には出さない） */
+const prefMem = {};
+const pref = {
+  get(k){
+    try{ const v = localStorage.getItem("teikyo." + k); if(v != null) return v; }catch(e){}
+    return prefMem[k] || "";
+  },
+  set(k, v){
+    prefMem[k] = v || "";
+    try{ if(v) localStorage.setItem("teikyo." + k, v); else localStorage.removeItem("teikyo." + k); }catch(e){}
+  }
+};
+/* 小さな部品を作る。値はすべてプロパティ代入で、HTML文字列には混ぜない */
+function mk(tag, props, ...kids){
+  const e = document.createElement(tag);
+  Object.entries(props || {}).forEach(([k, v])=>{
+    if(k === "class") e.className = v;
+    else if(k === "text") e.textContent = v;
+    else if(k === "style") e.style.cssText = v;
+    else if(k === "role" || k.startsWith("aria-")) e.setAttribute(k, v);
+    else e[k] = v;
+  });
+  kids.forEach(k => { if(k) e.append(k); });
+  return e;
+}
+
+/* 書き出しと同じ絵を別のキャンバスに写す。プレビューはすぐ元に戻す */
+function snapshot(kind){
+  render({withBg: kind !== "over", withGuide:false, hit:false});
+  const c = document.createElement("canvas");
+  c.width = cv.width; c.height = cv.height;
+  c.getContext("2d").drawImage(cv, 0, 0);
+  render();
+  return c;
+}
+const canvasBlob = (c, type, q) => new Promise(res => c.toBlob(res, type, q));
+/* 送り先の上限サイズに収める。背景のある完成画像は JPEG にでき、透過が要る絵は PNG のまま縮める */
+async function blobUnder(c, limit, jpegOK){
+  let b = await canvasBlob(c, "image/png");
+  if(!b) return null;
+  if(b.size <= limit) return { blob:b, ext:"png", type:"image/png", note:"" };
+  if(jpegOK){
+    b = await canvasBlob(c, "image/jpeg", 0.92);
+    if(b && b.size <= limit) return { blob:b, ext:"jpg", type:"image/jpeg", note:"画像が大きいので JPEG にしました" };
+  }
+  const type = jpegOK ? "image/jpeg" : "image/png";
+  for(let s = 0.85; s > 0.2; s *= 0.85){
+    const d = document.createElement("canvas");
+    d.width = Math.max(1, Math.round(c.width*s));
+    d.height = Math.max(1, Math.round(c.height*s));
+    const x = d.getContext("2d");
+    x.imageSmoothingQuality = "high";
+    x.drawImage(c, 0, 0, d.width, d.height);
+    b = await canvasBlob(d, type, 0.9);
+    if(b && b.size <= limit){
+      return { blob:b, ext: jpegOK ? "jpg" : "png", type, note:`画像が大きいので ${d.width}×${d.height} に縮めました` };
+    }
+  }
+  return null;
+}
+function setShot(img, blob){
+  if(img.src.startsWith("blob:")) URL.revokeObjectURL(img.src);
+  img.src = URL.createObjectURL(blob);
+}
+
+/* ---- Discord：ウェブフックで画像を送る ---- */
+const DISCORD_RE = /^https:\/\/(?:(?:canary|ptb)\.)?discord(?:app)?\.com\/api(?:\/v\d+)?\/webhooks\/\d+\/[\w-]+\/?(?:\?[^#\s]*)?$/;
+const DISCORD_LIMIT = 9500000;      /* Discord の上限（10MB）より少し小さめ */
+function discordError(status, body){
+  if(status === 401 || status === 403 || status === 404)
+    return "このウェブフックURLは使えません。消されたか、URLが違います。「送り先を変える」から貼り直してください。";
+  if(status === 413) return "画像が大きすぎて送れませんでした。";
+  if(status === 429) return "送信が混み合っています。少し待ってからもう一度お試しください。";
+  return `送れませんでした（Discordからの返事：${status}${body && body.message ? " " + body.message : ""}）`;
+}
+async function discordCall(url, init){
+  let r;
+  try{ r = await fetch(url, init); }
+  catch(e){ throw new Error("Discordにつながりませんでした。ネットにつながっているか確認してください。"); }
+  let body = null;
+  try{ body = await r.json(); }catch(e){}
+  if(!r.ok) throw new Error(discordError(r.status, body));
+  return body;
+}
+function maskHook(url){
+  const m = /webhooks\/(\d+)\//.exec(url);
+  return m ? `ウェブフック …/${m[1].slice(0, 4)}…` : "設定したウェブフック";
+}
+function openDiscord(){
+  if(pref.get("discordHook")) discordSendView(); else discordSetupView();
+}
+function discordSetupView(){
+  const cur = pref.get("discordHook");
+  const steps = mk("ol", {class:"steps"},
+    mk("li", {text:"Discordで、画像を送りたいチャンネルの ⚙（チャンネルの編集）を開く"}),
+    mk("li", {text:"「連携サービス」→「ウェブフック」→「新しいウェブフック」を押す"}),
+    mk("li", {text:"できたウェブフックを開いて「ウェブフックURLをコピー」を押す"}));
+  const inp = mk("input", {type:"text", inputMode:"url", autocomplete:"off", spellcheck:false,
+    placeholder:"https://discord.com/api/webhooks/…", "aria-label":"ウェブフックURL"});
+  const note = mk("p", {class:"hint", style:"margin:0",
+    text:"このURLは、この端末のこのブラウザの中だけに保存します（設定の書き出しにも入りません）。"
+       + "URLを知っている人は誰でもそのチャンネルに投稿できるので、人には見せないでください。"});
+  const msg = mk("p", {class:"mmsg", role:"status"});
+  const ok = mk("button", {type:"button", class:"primary", text:"確認して保存"});
+  const act = mk("div", {class:"mact"}, ok);
+  if(cur){
+    const back = mk("button", {type:"button", text:"戻る"});
+    back.addEventListener("click", discordSendView);
+    const del = mk("button", {type:"button", class:"del", text:"保存したURLを消す"});
+    del.addEventListener("click", ()=>{
+      pref.set("discordHook", ""); pref.set("discordName", "");
+      closeModal(); setStatus("DiscordのウェブフックURLを消しました");
+    });
+    act.append(back, del);
+  }
+  ok.addEventListener("click", async ()=>{
+    const url = inp.value.trim();
+    if(!DISCORD_RE.test(url)){
+      msg.className = "mmsg err";
+      msg.textContent = "DiscordのウェブフックURLではないようです。"
+        + "https://discord.com/api/webhooks/ で始まるURLを、まるごと貼り付けてください。";
+      return;
+    }
+    ok.disabled = true; msg.className = "mmsg"; msg.textContent = "確認しています…";
+    try{
+      const info = await discordCall(url, {method:"GET"});
+      pref.set("discordHook", url);
+      pref.set("discordName", (info && info.name) || "");
+      discordSendView();
+    }catch(e){
+      msg.className = "mmsg err"; msg.textContent = e.message;
+      ok.disabled = false;
+    }
+  });
+  inp.addEventListener("keydown", e=>{ if(e.key === "Enter") ok.click(); });
+  openModal(cur ? "Discordの送り先を変える" : "Discordに送る（最初の設定）",
+    "Discordの「ウェブフックURL」を下に貼り付けてください。設定は最初の1回だけです。",
+    mk("div", {class:"col"}, steps, inp, note, act, msg));
+  inp.focus();
+}
+function discordSendView(){
+  const url = pref.get("discordHook");
+  if(!url){ discordSetupView(); return; }
+  let kind = pref.get("discordKind") === "over" ? "over" : "full";
+  let ready = null, gen = 0;
+  const img = mk("img", {class:"shot", alt:"送る画像"});
+  const msg = mk("p", {class:"mmsg", role:"status"});
+  const send = mk("button", {type:"button", class:"primary", text:"Discordに送る"});
+  /* 画像はパネルを開いたとき（と送る画像を切り替えたとき）に作っておく */
+  const prepare = ()=>{
+    const my = ++gen;
+    send.disabled = true;
+    const c = snapshot(kind);
+    ready = blobUnder(c, DISCORD_LIMIT, kind === "full" && !!bgImg).then(r=>{
+      if(my !== gen || !img.isConnected) return r;   /* 切り替え済み・閉じた後なら何もしない */
+      if(r){ setShot(img, r.blob); send.disabled = false; }
+      else { msg.className = "mmsg err"; msg.textContent = "画像が大きすぎて送れません。"; }
+      return r;
+    });
+  };
+  const kinds = mk("div", {class:"kinds", role:"radiogroup", "aria-label":"送る画像"});
+  [["full","完成PNG"],["over","背景01（透過）"]].forEach(([v, l])=>{
+    const r = mk("input", {type:"radio", name:"dkind", value:v, checked: v === kind});
+    r.addEventListener("change", ()=>{ kind = v; pref.set("discordKind", v); prepare(); });
+    kinds.append(mk("label", {class:"inline"}, r, l));
+  });
+  const ta = mk("textarea", {class:"msg", maxLength:2000,
+    placeholder:"例）今日も提供ありがとうございました！", "aria-label":"一緒に送る文"});
+  ta.value = pref.get("discordText");
+  ta.addEventListener("input", ()=> pref.set("discordText", ta.value));
+  const name = pref.get("discordName");
+  const change = mk("button", {type:"button", class:"text", text:"送り先を変える"});
+  change.addEventListener("click", discordSetupView);
+  const dest = mk("div", {class:"dest"},
+    mk("span", {text:"送り先：" + (name ? `ウェブフック「${name}」` : maskHook(url))}), change);
+  send.addEventListener("click", async ()=>{
+    send.disabled = true; msg.className = "mmsg"; msg.textContent = "送っています…";
+    try{
+      const r = await ready;
+      if(!r) throw new Error("画像が大きすぎて送れません。");
+      const fname = `${kind === "over" ? "haikei01" : "teikyo"}_${stamp()}.${r.ext}`;
+      const fd = new FormData();
+      fd.append("payload_json", JSON.stringify({ content: ta.value.trim(), attachments:[{ id:0, filename:fname }] }));
+      fd.append("files[0]", r.blob, fname);
+      const u = new URL(url);
+      u.searchParams.set("wait", "true");
+      await discordCall(u.toString(), {method:"POST", body:fd});
+      closeModal();
+      setStatus("Discordに送りました" + (r.note ? `（${r.note}）` : ""));
+    }catch(e){
+      msg.className = "mmsg err"; msg.textContent = e.message || String(e);
+      send.disabled = false;
+    }
+  });
+  openModal("Discordに送る", "選んだ画像を、設定したチャンネルに送ります。",
+    mk("div", {class:"col"},
+      img, kinds,
+      mk("div", null, mk("label", {text:"一緒に送る文（なくてもOK）"}), ta),
+      dest, mk("div", {class:"mact"}, send), msg));
+  prepare();
+}
+
+/* ---- X：スマホは共有メニュー、PCは画像をコピーして投稿画面を開く ---- */
+const X_LIMIT = 4800000;            /* X の画像の上限（5MB）より少し小さめ */
+const xIntent = text => "https://x.com/intent/tweet" + (text ? "?text=" + encodeURIComponent(text) : "");
+function canShareFiles(){
+  try{
+    if(!(window.matchMedia && matchMedia("(pointer:coarse)").matches) || !navigator.canShare) return false;
+    return navigator.canShare({ files:[new File([""], "a.png", {type:"image/png"})] });
+  }catch(e){ return false; }
+}
+function openX(){
+  const share = canShareFiles();
+  let prep = null;
+  const img = mk("img", {class:"shot", alt:"投稿する画像"});
+  const ta = mk("textarea", {class:"msg", placeholder:"例）今日も提供ありがとうございました！ #Palmu",
+    "aria-label":"投稿する文"});
+  ta.value = pref.get("xText");
+  ta.addEventListener("input", ()=> pref.set("xText", ta.value));
+  const go = mk("button", {type:"button", class:"primary", disabled:true,
+    text: share ? "共有メニューを開く" : "画像をコピーしてXを開く"});
+  const keep = mk("button", {type:"button", text:"画像を保存", disabled:true});
+  const act = mk("div", {class:"mact"}, go, keep);
+  const msg = mk("p", {class:"mmsg", role:"status", text:"画像を準備しています…"});
+  /* 共有で渡す名前は英数字だけにする。保存は「完成PNGを保存」と同じ名前 */
+  const fname = () => `teikyo_${stamp()}.${prep.ext}`;
+  const saveName = () => `提供_${stamp()}.${prep.ext}`;
+  go.addEventListener("click", async ()=>{
+    if(!prep) return;
+    const text = ta.value.trim();
+    if(share){
+      const file = new File([prep.blob], fname(), {type:prep.type});
+      try{
+        await navigator.share(text ? {files:[file], text} : {files:[file]});
+        closeModal();
+      }catch(e){
+        if(e && e.name === "AbortError") return;      /* 共有メニューを閉じただけ */
+        msg.className = "mmsg err";
+        msg.textContent = "共有メニューを開けませんでした。「画像を保存」してから、Xのアプリで投稿してください。";
+      }
+      return;
+    }
+    /* コピーできたら投稿画面で貼るだけ。できなければ保存して付けてもらう */
+    let copied = false;
+    try{
+      await navigator.clipboard.write([new ClipboardItem({ [prep.type]: prep.blob })]);
+      copied = true;
+    }catch(e){}
+    if(!copied) saveFile(saveName(), prep.blob, "image");
+    const w = window.open(xIntent(text), "_blank");
+    if(w){ try{ w.opener = null; }catch(e){} }
+    msg.className = "mmsg ok";
+    msg.textContent = (copied
+      ? "✓ 画像をコピーしました。Xの投稿画面で本文の欄をクリックし、Ctrl+V（Macは ⌘+V）を押すと画像が付きます。"
+      : "画像を保存しました。Xの投稿画面に、保存した画像をドラッグして付けてください。")
+      + (w ? "" : "（新しいタブが開かなかったときは、下の「Xの投稿画面を開く」を押してください）");
+    if(!w && !act.querySelector("a")){
+      act.append(mk("a", {class:"btnLink", href:xIntent(text), target:"_blank", rel:"noopener", text:"Xの投稿画面を開く"}));
+    }
+  });
+  keep.addEventListener("click", ()=>{ if(prep) saveFile(saveName(), prep.blob, "image"); });
+  openModal("Xに投稿",
+    share ? "「共有メニューを開く」から X を選ぶと、画像付きで投稿できます。"
+          : "画像をコピーして、Xの投稿画面を開きます。開いたら本文の欄で Ctrl+V（Macは ⌘+V）を押すと画像が付きます。",
+    mk("div", {class:"col"},
+      img,
+      mk("div", null, mk("label", {text:"投稿する文（Xの画面でも直せます）"}), ta),
+      act, msg));
+  /* コピーで渡せるのは PNG だけなので、PC は PNG のまま上限に収める */
+  blobUnder(snapshot("full"), X_LIMIT, share && !!bgImg).then(r=>{
+    if(!img.isConnected) return;               /* 準備中に閉じられた */
+    if(!r){ msg.className = "mmsg err"; msg.textContent = "画像が大きすぎて準備できませんでした。"; return; }
+    prep = r;
+    setShot(img, r.blob);
+    go.disabled = false; keep.disabled = false;
+    msg.textContent = r.note || "";
+  });
+}
+$("#shareDiscord").addEventListener("click", openDiscord);
+$("#shareX").addEventListener("click", openX);
 $("#expJson").addEventListener("click", ()=>{
   saveFile("提供設定_" + stamp() + ".json",
     new Blob([JSON.stringify(state,null,2)], {type:"application/json"}), "text");
@@ -1955,13 +2575,13 @@ $("#clearItems").addEventListener("click", async ()=>{
   if(!state.items.length) return;
   if(!confirm(`リスナー${state.items.length}人をすべて消します。背景と設定は残ります。よろしいですか？`)) return;
   cancelPendingSave();
-  state.items = []; iconCache.clear(); reseq(); selectedId = null;
+  state.items = []; iconCache.clear(); reseq(); replaceSel([]);
   render(); renderList(); save();
 });
 $("#clearAll").addEventListener("click", async ()=>{
   if(!confirm("リスナー・背景・段階設定をすべて初期状態に戻します。よろしいですか？")) return;
   cancelPendingSave();
-  state = defaultState(); bgImg = null; iconCache.clear(); selectedId = null;
+  state = defaultState(); bgImg = null; iconCache.clear(); replaceSel([]);
   try{ await DB.del("state"); }catch(e){}
   $("#bgFile").value = ""; $("#banner").classList.remove("on");
   await hydrate();
@@ -2018,9 +2638,10 @@ function normalizeState(s){
     it.scale = Number.isFinite(it.scale) ? clamp(it.scale, 0.02, 20) : null;
     it.on = it.on !== false;
     if(it.off){
-      const x = Math.round(num(it.off.x,0)), y = Math.round(num(it.off.y,0));
+      const x = Math.round(num(it.off.x,0)*100)/100, y = Math.round(num(it.off.y,0)*100)/100;
       it.off = (x || y) ? {x, y} : null;
     }
+    it.lay = (it.lay === "row" || it.lay === "stack") ? it.lay : null;
   });
   return out;
 }
@@ -2029,6 +2650,7 @@ function normalizeState(s){
    起動
    ============================================================ */
 async function hydrate(){
+  selIds.clear(); selectedId = null; openId = null;   /* 中身が入れ替わるので選択も捨てる */
   if(!state.tiers || !state.tiers.length) state.tiers = defaultTiers();
   sortTiers();
   state.items.forEach((it,i)=>{ if(!Number.isFinite(it.seq)) it.seq = i; });
