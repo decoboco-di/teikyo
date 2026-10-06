@@ -175,7 +175,9 @@
   .xy{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
   .xy label{display:flex;align-items:center;gap:6px;margin:0;font-size:var(--fs-sm);color:var(--text-2)}
   .xy input{width:76px}
-  .xy input.moved{border-color:var(--accent);color:var(--accent-text);font-weight:600}
+  .det input.moved{border-color:var(--accent);color:var(--accent-text);font-weight:600}
+  .fld select[data-act=scaleMode]{width:auto}
+  .grpNote{font-size:var(--fs-sm);color:var(--text-2)}
   .det .hint{margin:6px 0 0;font-size:var(--fs-xs);line-height:1.5}
   .order{display:flex;align-items:center;gap:8px}
   .detFoot{display:flex;justify-content:flex-end;padding-top:8px}
@@ -250,6 +252,7 @@
     background-size:20px 20px,20px 20px,100% 100%;background-position:0 0,10px 10px,0 0}
   #cv{display:block;touch-action:none}
   #cv.grab{cursor:grab} #cv.grabbing{cursor:grabbing}
+  #cv.rs-nwse{cursor:nwse-resize} #cv.rs-nesw{cursor:nesw-resize}
   /* 選択バーは常に同じ高さ・1行で出しておく（出し入れで表示倍率が変わるとドラッグがずれる）。
      入りきらないときは折り返さずに横へスクロールする */
   #selBar{flex:0 0 auto;display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;
@@ -268,8 +271,6 @@
   @container main (max-width:1000px){
     .alg .lbl{display:none}
     .alg button{width:34px;padding:0}
-  }
-  @container main (max-width:640px){
     .selLay .segCap{display:none}
   }
 
@@ -498,15 +499,21 @@
         <button type="button" class="mini" data-al="middle" title="真ん中ぞろえ（アイコン・名前・バッジ全体の上下の真ん中をそろえる）" aria-label="真ん中ぞろえ"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 8h2.5M7 8h2M12.5 8H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="3.5" y="2" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="9" y="4.5" width="3.5" height="7" rx="1" fill="currentColor"/></svg><span class="lbl">真ん中ぞろえ</span></button>
         <button type="button" class="mini" data-al="bottom" title="下ぞろえ（アイコン・名前・バッジ全体の下をそろえる）" aria-label="下ぞろえ"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 14.25h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="3.5" y="2" width="3.5" height="10" rx="1" fill="currentColor"/><rect x="9" y="6" width="3.5" height="6" rx="1" fill="currentColor"/></svg><span class="lbl">下ぞろえ</span></button>
         <span class="sep" aria-hidden="true"></span>
+        <button type="button" class="mini" data-al="left" title="左ぞろえ（アイコン・名前・バッジ全体の左をそろえる）" aria-label="左ぞろえ"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.75 1.5v13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="4" y="3.5" width="10" height="3.5" rx="1" fill="currentColor"/><rect x="4" y="9" width="6" height="3.5" rx="1" fill="currentColor"/></svg><span class="lbl">左ぞろえ</span></button>
+        <button type="button" class="mini" data-al="right" title="右ぞろえ（アイコン・名前・バッジ全体の右をそろえる）" aria-label="右ぞろえ"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M14.25 1.5v13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="2" y="3.5" width="10" height="3.5" rx="1" fill="currentColor"/><rect x="6" y="9" width="6" height="3.5" rx="1" fill="currentColor"/></svg><span class="lbl">右ぞろえ</span></button>
+        <span class="sep" aria-hidden="true"></span>
         <button type="button" class="mini" data-al="hdist" title="横に等間隔（人と人のすき間を同じにする。左端と右端の人はそのまま。3人以上で使えます）" aria-label="横に等間隔"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.75 1.5v13M14.25 1.5v13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="4.25" y="4" width="2.75" height="8" rx=".75" fill="currentColor"/><rect x="9" y="4" width="2.75" height="8" rx=".75" fill="currentColor"/></svg><span class="lbl">横に等間隔</span></button>
         <button type="button" class="mini" data-al="vdist" title="縦に等間隔（人と人のすき間を同じにする。いちばん上と下の人はそのまま。3人以上で使えます）" aria-label="縦に等間隔"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 1.75h13M1.5 14.25h13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="4" y="4.25" width="8" height="2.75" rx=".75" fill="currentColor"/><rect x="4" y="9" width="8" height="2.75" rx=".75" fill="currentColor"/></svg><span class="lbl">縦に等間隔</span></button>
       </div>
+      <button type="button" class="mini" id="selGroup" title="選んだ人を1つのかたまりにする（Ctrl+G）" hidden>グループにする</button>
+      <button type="button" class="mini" id="selUngroup" title="グループを解く（Ctrl+Shift+G）" hidden>グループ解除</button>
       <div id="selLay" class="selLay" hidden>
         <span class="segCap">名前とバッジ</span>
         <div class="seg" role="group" aria-label="名前とバッジの並べ方">
           <button type="button" data-v="row" aria-pressed="false">横並び</button><button type="button" data-v="stack" aria-pressed="false">縦2段</button>
         </div>
       </div>
+      <button type="button" class="mini" id="selZoomReset" hidden>大きさを戻す</button>
       <button type="button" class="mini" id="selReset" hidden>位置を戻す</button>
     </div>
   </div>
@@ -857,6 +864,26 @@ function tierOf(badge){
 const visibleItems = () => state.items.filter(it => it.on !== false);
 /* 名前とバッジの並べ方。1人ずつ決めていなければ全体の設定に従う */
 const layOf = it => (it.lay === "row" || it.lay === "stack") ? it.lay : state.labelLayout;
+/* プレビューで変えた大きさ（見た目だけ。まわりの人の並びは変えない） */
+const ZOOM_MIN = 0.2, ZOOM_MAX = 5;
+const zoomOf = it => { const z = num(it.zoom, 1); return z > 0 ? clamp(z, ZOOM_MIN, ZOOM_MAX) : 1; };
+function setZoom(it, z){
+  z = clamp(Math.round(num(z, 1)*1000)/1000, ZOOM_MIN, ZOOM_MAX);
+  it.zoom = Math.abs(z - 1) < 0.0005 ? 1 : z;
+}
+/* その人が入っているグループの、画像に出ている全員（グループでなければ本人だけ） */
+function unitOf(it){
+  if(!it.grp) return [it.id];
+  const ids = state.items.filter(x => x.grp === it.grp && x.on !== false).map(x => x.id);
+  return ids.length ? ids : [it.id];
+}
+/* 1人だけになったグループは解く */
+function pruneGroups(items){
+  items = items || state.items;
+  const cnt = new Map();
+  items.forEach(it => { if(it.grp) cnt.set(it.grp, (cnt.get(it.grp) || 0) + 1); });
+  items.forEach(it => { if(it.grp && cnt.get(it.grp) < 2) it.grp = null; });
+}
 /* 1人ずつ切り替える。全体の設定と同じ方を選んだら「全体に従う」に戻す */
 function setLay(items, v){
   v = v === "stack" ? "stack" : "row";
@@ -866,10 +893,10 @@ function setLay(items, v){
 /* ============================================================
    1件分の寸法
    ============================================================ */
-function metrics(it, lay){
+function metrics(it, lay, zoom){
   const {t} = tierOf(it.badge);
   lay = lay || layOf(it);
-  const icon = clamp(num(state.baseIcon, 215) * num(it.scale ?? t.scale, 1), 8, 20000);
+  const icon = clamp(num(state.baseIcon, 215) * num(it.scale ?? t.scale, 1) * (zoom || 1), 8, 20000);
   const label = it.name || "";
 
   const nameFS  = Math.max(4, icon * num(t.fs, 0.28));
@@ -990,8 +1017,11 @@ function layout(){
       const want = own ? Math.max(ax, wantG + mg.ox - m.ox) : wantG;
       const x = Math.max(want, prevRight + cg);
       prevRight = x + m.w;
+      /* プレビューで変えた大きさは見た目だけ。並びの場所はそのままで、その真ん中を中心に大きくする */
+      const z = zoomOf(it);
+      const md = z !== 1 ? metrics(it, null, z) : m;
       const off = it.off || {x:0,y:0};
-      out.push({ it, m, x: x + num(off.x,0), y: y + num(off.y,0) });
+      out.push({ it, m: md, x: x + (m.w - md.w)/2 + num(off.x,0), y: y + (m.h - md.h)/2 + num(off.y,0) });
       rowH = Math.max(rowH, m.h);
     });
     y += rowH + rg;
@@ -1074,8 +1104,13 @@ function render(opts){
                      num(state.area.w,0), num(state.area.h,0));
       ctx.restore();
     }
-    nodes.forEach(sel=>{
-      if(!selIds.has(sel.it.id)) return;
+    const selNodes = nodes.filter(n => selIds.has(n.it.id));
+    /* グループの全員を選んでいるときは、グループ全体の枠だけ出す（1人ずつの点線は省く） */
+    const gm = new Map();
+    nodes.forEach(n => { if(n.it.grp){ if(!gm.has(n.it.grp)) gm.set(n.it.grp, []); gm.get(n.it.grp).push(n); } });
+    const fullG = new Set([...gm].filter(([, ms]) => ms.length > 1 && ms.every(n => selIds.has(n.it.id))).map(([g]) => g));
+    selNodes.forEach(sel=>{
+      if(sel.it.grp && fullG.has(sel.it.grp)) return;
       const p = px(5), r = [sel.x - p, sel.y - p, sel.m.w + p*2, sel.m.h + p*2];
       ctx.save();
       ctx.lineWidth = px(4); ctx.strokeStyle = "rgba(255,255,255,.9)";
@@ -1084,6 +1119,32 @@ function render(opts){
       ctx.strokeRect(r[0], r[1], r[2], r[3]);
       ctx.restore();
     });
+    /* グループ全体を実線の枠で囲み「グループ」と付ける */
+    gm.forEach((ms, g)=>{
+      if(!fullG.has(g)) return;
+      const q = px(11);
+      const x1 = Math.min(...ms.map(n => n.x)) - q, y1 = Math.min(...ms.map(n => n.y)) - q;
+      const x2 = Math.max(...ms.map(n => n.x + n.m.w)) + q, y2 = Math.max(...ms.map(n => n.y + n.m.h)) + q;
+      ctx.save();
+      ctx.lineWidth = px(5); ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.strokeRect(x1, y1, x2-x1, y2-y1);
+      ctx.lineWidth = px(2); ctx.strokeStyle = "#7b4fd6"; ctx.strokeRect(x1, y1, x2-x1, y2-y1);
+      ctx.font = `700 ${px(11)}px sans-serif`;
+      const tw = ctx.measureText("グループ").width, th = px(17);
+      roundRect(ctx, x1 - px(1), y1 - th, tw + px(12), th, px(3));
+      ctx.fillStyle = "#7b4fd6"; ctx.fill();
+      ctx.fillStyle = "#ffffff"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+      ctx.fillText("グループ", x1 + px(5), y1 - th/2 + px(0.5));
+      ctx.restore();
+    });
+    /* 1人だけ選んでいるときは、四隅に大きさを変えるつまみを出す */
+    if(selNodes.length === 1){
+      const n = selNodes[0], p = px(5), s = px(10);
+      ctx.save();
+      ctx.lineWidth = px(1.5); ctx.strokeStyle = "#7b4fd6"; ctx.fillStyle = "#ffffff";
+      [[n.x - p, n.y - p], [n.x + n.m.w + p, n.y - p], [n.x - p, n.y + n.m.h + p], [n.x + n.m.w + p, n.y + n.m.h + p]]
+        .forEach(([hx, hy])=>{ ctx.fillRect(hx - s/2, hy - s/2, s, s); ctx.strokeRect(hx - s/2, hy - s/2, s, s); });
+      ctx.restore();
+    }
     /* 範囲選択の枠 */
     if(marq && marq.on){
       const x = Math.min(marq.a.x, marq.b.x), y = Math.min(marq.a.y, marq.b.y);
@@ -1122,8 +1183,10 @@ function checkWarnings(nodes){
     n.x + n.m.w > cv.width || n.y + n.m.h > cv.height || n.x < 0 || n.y < 0);
   if(cut.length){
     const names = cut.map(n => n.m.label || "（名前なし）").slice(0,3).join("、");
+    /* 手で動かしたり大きくしたりして切れたときは、「エリアに収める」では直らない */
+    const manual = cut.some(n => n.it.off || zoomOf(n.it) !== 1);
     el.textContent = `⚠ 画像から切れています：${names}${cut.length>3?` ほか${cut.length-3}件`:""}`
-      + "。「エリアに収める」で直せます";
+      + (manual ? "。ドラッグで内側に動かすか、位置・大きさを戻してください" : "。「エリアに収める」で直せます");
     return;
   }
   const ab = num(state.area.y,0) + num(state.area.h,0);
@@ -1167,7 +1230,7 @@ function fitToArea(opts){
 function applyZoom(){
   const stage = $("#stage");
   if(!stage.clientWidth || !stage.clientHeight) return;   /* タブで隠れている */
-  if((drag || marq) && cv.style.width) return;   /* ドラッグ中に表示倍率が変わると位置がずれるので待つ */
+  if((drag || marq || rsz) && cv.style.width) return;   /* ドラッグ中に表示倍率が変わると位置がずれるので待つ */
   let s = zoomMode === "fit"
     ? Math.min((stage.clientWidth-40)/cv.width, (stage.clientHeight-40)/cv.height, 1)
     : parseFloat(zoomMode);
@@ -1199,7 +1262,7 @@ function rescaleGeometry(oldW, oldH, newW, newH){
 /* ============================================================
    ドラッグ
    ============================================================ */
-let drag = null, marq = null;   /* marq＝空いた所からの範囲選択 */
+let drag = null, marq = null, rsz = null;   /* marq＝空いた所からの範囲選択、rsz＝四隅の□で大きさを変えている */
 /* 動かし始めは画面上の距離で判定する。指はぶれやすいので大きめにとる */
 const DRAG_THRESHOLD = { mouse:4, touch:8 };
 function toCanvas(ev){
@@ -1216,11 +1279,31 @@ function hit(p){
   }
   return null;
 }
-/* 範囲選択は、アイコンの中心が枠に入った人を選ぶ */
+/* 1人だけ選んでいるときの四隅の□。指のときはつかめる範囲を広くする */
+function handleAt(p, touch){
+  const ns = lastNodes.filter(n => selIds.has(n.it.id));
+  if(ns.length !== 1) return null;
+  const n = ns[0];
+  const ds = cv.clientWidth ? cv.clientWidth / cv.width : 0.4;
+  const pad = 5 / ds, r = (touch ? 18 : 9) / ds;
+  const x1 = n.x - pad, y1 = n.y - pad, x2 = n.x + n.m.w + pad, y2 = n.y + n.m.h + pad;
+  for(const [hx, hy, cur] of [[x1, y1, "nwse"], [x2, y1, "nesw"], [x1, y2, "nesw"], [x2, y2, "nwse"]]){
+    if(Math.abs(p.x - hx) <= r && Math.abs(p.y - hy) <= r) return { n, hx, hy, cur };
+  }
+  return null;
+}
+/* 範囲選択は、アイコンの中心が枠に入った人を選ぶ（グループの人が入ったら、そのグループ全員） */
 function inMarquee(n, a, b){
   const cx = n.x + n.m.ox + n.m.icon/2, cy = n.y + n.m.oy + n.m.icon/2;
   return cx >= Math.min(a.x, b.x) && cx <= Math.max(a.x, b.x)
       && cy >= Math.min(a.y, b.y) && cy <= Math.max(a.y, b.y);
+}
+/* クリックだけで離したとき：
+   複数選んでいる中の1人 → そのグループ（グループでなければその人）だけにする。もう一度でその人だけ */
+function collapseTo(it){
+  const u = unitOf(it);
+  if(u.length > 1 && selIds.size > u.length && u.every(id => selIds.has(id))){ replaceSel(u, it.id); render(); }
+  else setSelected(it.id);
 }
 function endDrag(ev, cancelled){
   if(drag){
@@ -1228,8 +1311,12 @@ function endDrag(ev, cancelled){
     drag = null; cv.className = "grab";
     if(d.moved){ render(); save(); }
     else if(cancelled) render();
-    else if(d.after === "only") setSelected(d.it.id);      /* 複数選択中に1人をクリック → その人だけ */
-    else if(d.after === "drop"){ toggleSel(d.it.id); render(); }   /* Shift+クリックで外す */
+    else if(d.after === "only") collapseTo(d.it);
+    else if(d.after === "drop"){                     /* Shift+クリックで外す（グループごと） */
+      const u = unitOf(d.it);
+      (u.every(id => selIds.has(id)) ? u : [d.it.id]).forEach(unselect);
+      render();
+    }
     else render();
   }
   if(marq){
@@ -1239,9 +1326,28 @@ function endDrag(ev, cancelled){
     if(!m.on && !m.add && !cancelled) setSelected(null, {noScroll:true});
     else render();
   }
+  if(rsz){
+    const r = rsz;
+    rsz = null; cv.className = "grab";
+    render();
+    if(r.moved){ refreshRow(r.it); save(); }
+  }
   if(ev) try{ cv.releasePointerCapture(ev.pointerId); }catch(e){}
 }
 cv.addEventListener("pointermove", ev=>{
+  if(rsz){
+    if(!rsz.moved && Math.hypot(ev.clientX - rsz.sx, ev.clientY - rsz.sy) < rsz.th) return;
+    rsz.moved = true;
+    /* 真ん中から□へ向かう方向に、つかんだ位置からどれだけ広げたかで倍率を決める */
+    const p = toCanvas(ev);
+    const f = ((p.x - rsz.cx)*rsz.vx + (p.y - rsz.cy)*rsz.vy) / rsz.dot0;
+    let z = rsz.z0 * Math.max(0.01, f);
+    if(Math.abs(z - 1) < 0.015) z = 1;                /* 元の大きさの近くでは吸い付かせる */
+    setZoom(rsz.it, z);
+    render({hit:false});
+    refreshRow(rsz.it);                               /* 一覧の「大きさ %」も合わせる */
+    return;
+  }
   if(drag){
     if(!drag.moved && Math.hypot(ev.clientX - drag.sx, ev.clientY - drag.sy) < drag.th) return;
     const p = toCanvas(ev);
@@ -1258,34 +1364,49 @@ cv.addEventListener("pointermove", ev=>{
     if(!marq.on && Math.hypot(ev.clientX - marq.sx, ev.clientY - marq.sy) < marq.th) return;
     marq.on = true;
     marq.b = toCanvas(ev);
-    const hits = lastNodes.filter(n => inMarquee(n, marq.a, marq.b)).map(n => n.it.id);
-    replaceSel(marq.add ? [...new Set([...marq.base, ...hits])] : hits);
+    const hits = new Set();
+    lastNodes.forEach(n => { if(inMarquee(n, marq.a, marq.b)) unitOf(n.it).forEach(id => hits.add(id)); });
+    replaceSel(marq.add ? [...new Set([...marq.base, ...hits])] : [...hits]);
     render({hit:false});
     return;
   }
-  cv.className = hit(toCanvas(ev)) ? "grab" : "";
+  const p = toCanvas(ev), hd = handleAt(p, ev.pointerType !== "mouse");
+  cv.className = hd ? "rs-" + hd.cur : (hit(p) ? "grab" : "");
 });
 cv.addEventListener("pointerdown", ev=>{
   if(ev.button > 0) return;                 /* 右クリックなどは使わない */
-  const p = toCanvas(ev), n = hit(p);
-  /* Shift／Ctrl（Macは⌘）を押しながら、またはスマホの「複数選択」中は、選択に足したり外したりする */
-  const add = ev.shiftKey || ev.ctrlKey || ev.metaKey || multiMode;
+  const p = toCanvas(ev);
   const th = ev.pointerType === "mouse" ? DRAG_THRESHOLD.mouse : DRAG_THRESHOLD.touch;
   try{ cv.setPointerCapture(ev.pointerId); }catch(e){}
+  /* 四隅の□：その人の真ん中を中心に大きさを変える（まわりの人は動かない） */
+  const hd = handleAt(p, ev.pointerType !== "mouse");
+  if(hd){
+    const n = hd.n, cx = n.x + n.m.w/2, cy = n.y + n.m.h/2;
+    const vx = hd.hx - cx, vy = hd.hy - cy;
+    rsz = { it:n.it, z0:zoomOf(n.it), cx, cy, vx, vy,
+            dot0: Math.max(1e-6, (p.x - cx)*vx + (p.y - cy)*vy),
+            sx:ev.clientX, sy:ev.clientY, th, moved:false };
+    cv.className = "rs-" + hd.cur;
+    return;
+  }
+  const n = hit(p);
+  /* Shift／Ctrl（Macは⌘）を押しながら、またはスマホの「複数選択」中は、選択に足したり外したりする */
+  const add = ev.shiftKey || ev.ctrlKey || ev.metaKey || multiMode;
   if(!n){
     marq = { a:p, b:p, sx:ev.clientX, sy:ev.clientY, th, on:false, add, base:[...selIds] };
     return;
   }
-  const id = n.it.id;
+  /* グループの人を選ぶときは、グループ全員をまとめて選ぶ */
+  const id = n.it.id, unit = unitOf(n.it);
   let after = null;
   if(add){
     if(selIds.has(id)){ after = "drop"; selectedId = id; }
-    else toggleSel(id);
+    else replaceSel([...selIds, ...unit], id);
   } else if(selIds.has(id)){
     selectedId = id;
     if(selIds.size > 1) after = "only";
   } else {
-    replaceSel([id], id);
+    replaceSel(unit, id);
     const row = rowOf(n.it);
     if(row) row.scrollIntoView({block:"nearest"});
   }
@@ -1302,7 +1423,7 @@ cv.addEventListener("pointercancel", ev => endDrag(ev, true));
    ============================================================ */
 function newItem(){
   return { id:"i"+Math.random().toString(36).slice(2,9), seq:seqCounter++,
-           name:"", badge:3.00, icon:null, scale:null, off:null, on:true, lay:null };
+           name:"", badge:3.00, icon:null, scale:null, off:null, on:true, lay:null, zoom:1, grp:null };
 }
 function badgeOptions(){
   const f = document.createDocumentFragment();
@@ -1403,7 +1524,7 @@ const ITEM_HTML = `
   <div class="thumb" data-act="pick" title="タップで画像を選ぶ（画像のドロップも可）"></div>
   <input type="text" data-act="name" placeholder="表示名（絵文字もOK）" aria-label="名前">
   <select data-act="badge" aria-label="バッジ"></select>
-  <button type="button" class="more" data-act="more" aria-expanded="false" aria-label="並べ方・大きさ・位置・削除"></button>
+  <button type="button" class="more" data-act="more" aria-expanded="false" aria-label="並べ方・大きさ・位置・グループ・削除"></button>
   <div class="det" hidden>
     <div class="detRow">
       <div class="fld">名前とバッジ
@@ -1414,10 +1535,8 @@ const ITEM_HTML = `
       </div>
     </div>
     <div class="detRow">
-      <label class="fld">大きさ <select data-act="scaleMode">
-        <option value="auto">自動</option><option value="manual">手動</option>
-      </select></label>
-      <label class="fld scaleWrap">倍率 <input type="number" step="0.01" min="0.05" data-act="scale"></label>
+      <label class="fld">大きさ <input type="number" step="5" min="20" max="500" data-act="zoom"> %</label>
+      <button type="button" class="mini" data-act="zoomReset" hidden>大きさを戻す</button>
     </div>
     <div class="pos">
       <div class="xy">
@@ -1426,7 +1545,20 @@ const ITEM_HTML = `
         <label>縦 <input type="number" step="1" data-act="offy"> px</label>
         <button type="button" class="mini" data-act="reset" hidden>位置を戻す</button>
       </div>
-      <p class="hint">横は＋で右、縦は＋で下へ動きます。プレビューで人物をドラッグしても動かせます。</p>
+      <p class="hint">横は＋で右、縦は＋で下へ動きます。プレビューで人物をドラッグすると位置を、選んだときに出る四隅の□をドラッグすると大きさを変えられます。大きさを変えても、まわりの人は動きません。</p>
+    </div>
+    <div class="detRow grpRow" hidden>
+      <span class="cap">グループ</span><span class="grpNote"></span>
+      <button type="button" class="mini" data-act="ungroupOne">この人だけ外す</button>
+    </div>
+    <div>
+      <div class="detRow">
+        <label class="fld">アイコン倍率 <select data-act="scaleMode">
+          <option value="auto">段の設定</option><option value="manual">この人だけ</option>
+        </select></label>
+        <label class="fld scaleWrap"><input type="number" step="0.01" min="0.05" data-act="scale" aria-label="この人のアイコン倍率"></label>
+      </div>
+      <p class="hint">アイコン倍率を「この人だけ」にすると、まわりの人の並びも合わせて動きます。</p>
     </div>
     <div class="order" hidden>
       <span class="cap">順番</span>
@@ -1492,7 +1624,16 @@ function syncItemRow(el, it, idx, manual){
   const sc = q("[data-act=scale]");
   setVal(sc, num(it.scale ?? t.scale, 1).toFixed(2));
   sc.disabled = it.scale == null;
-  q(".scaleWrap").hidden = it.scale == null;     /* 倍率は「手動」のときだけ出す */
+  q(".scaleWrap").hidden = it.scale == null;     /* 倍率は「この人だけ」のときだけ出す */
+  /* プレビューで変えた大きさ（%） */
+  const z = zoomOf(it), zi = q("[data-act=zoom]");
+  setVal(zi, String(Math.round(z*100)));
+  zi.classList.toggle("moved", z !== 1);
+  q("[data-act=zoomReset]").hidden = z === 1;
+  /* グループに入っていればその人数 */
+  const mates = it.grp ? state.items.filter(x => x.grp === it.grp).length : 0;
+  q(".grpRow").hidden = mates < 2;
+  q(".grpNote").textContent = mates >= 2 ? `${mates}人のグループに入っています` : "";
   /* 順番の入れ替えは「リストの順番」で並べるときだけ意味があるので、そのときだけ出す */
   q(".order").hidden = !manual;
   q("[data-act=up]").disabled   = idx <= 0;
@@ -1533,6 +1674,19 @@ function onItemInput(e, it, el){
     if(!Number.isFinite(v) || v <= 0) return;       /* 空欄・入力途中は無視 */
     it.scale = clamp(v, 0.02, 20); render(); save();
   }
+  else if(a === "zoom"){
+    const v = parseFloat(e.target.value);
+    if(!Number.isFinite(v) || v <= 0){
+      if(e.type === "change") e.target.value = String(Math.round(zoomOf(it)*100));
+      return;
+    }
+    setZoom(it, v/100);
+    if(e.type === "change") e.target.value = String(Math.round(zoomOf(it)*100));   /* 範囲外は直して見せる */
+    e.target.classList.toggle("moved", zoomOf(it) !== 1);
+    el.querySelector("[data-act=zoomReset]").hidden = zoomOf(it) === 1;
+    selectQuiet(it.id);
+    render(); syncPos(el, it); save();
+  }
   else if(a === "offx" || a === "offy"){
     const v = parseFloat(e.target.value);
     const off = it.off || {x:0, y:0};
@@ -1553,6 +1707,11 @@ function onItemClick(e, it){
   else if(a === "lay"){ setLay([it], e.target.dataset.v); render(); refreshRow(it); save(); }
   else if(a === "del")   deleteItem(it);
   else if(a === "reset") resetPos(it);
+  else if(a === "zoomReset"){ setZoom(it, 1); render(); refreshRow(it); save(); }
+  else if(a === "ungroupOne"){
+    it.grp = null; pruneGroups();
+    render(); state.items.forEach(refreshRow); save();
+  }
   else if(a === "up" || a === "down"){
     const idx = state.items.indexOf(it);
     const to = idx + (a === "up" ? -1 : 1);
@@ -1565,7 +1724,9 @@ function deleteItem(it){
   const idx = state.items.indexOf(it);
   if(idx < 0) return;
   const img = iconCache.get(it.id);
+  const keepG = state.items.map(x => [x, x.grp]);     /* 2人のグループが1人になって解けても、元に戻せるように */
   state.items.splice(idx,1); iconCache.delete(it.id); reseq();
+  pruneGroups();
   unselect(it.id);
   if(openId === it.id) openId = null;
   render(); renderList(); save();
@@ -1573,6 +1734,7 @@ function deleteItem(it){
     label:"元に戻す",
     run(){
       state.items.splice(Math.min(idx, state.items.length), 0, it);
+      keepG.forEach(([x, g]) => { x.grp = g; });
       if(img) iconCache.set(it.id, img);
       reseq(); render(); renderList(); save();
     }
@@ -1612,43 +1774,100 @@ function offUndo(list){
   }};
 }
 /* そろえる・等間隔。アイコン・名前・バッジを合わせた全体（選んだときの点線の枠）を基準にする */
-const ALIGN_NAME = { top:"上ぞろえ", middle:"真ん中ぞろえ", bottom:"下ぞろえ",
+const ALIGN_NAME = { top:"上ぞろえ", middle:"真ん中ぞろえ", bottom:"下ぞろえ", left:"左ぞろえ", right:"右ぞろえ",
                      hdist:"横に等間隔", vdist:"縦に等間隔" };
+/* 選んでいる人を「かたまり」に分ける。グループの全員を選んでいたら、そのグループで1つ。
+   グループ1つだけを選んでいるときは、その中の人どうしでそろえる */
+function alignTargets(){
+  const ns = lastNodes.filter(n => selIds.has(n.it.id));
+  const map = new Map();
+  ns.forEach(n=>{
+    const u = unitOf(n.it);
+    const k = (u.length > 1 && u.every(id => selIds.has(id))) ? "g:" + n.it.grp : "p:" + n.it.id;
+    if(!map.has(k)) map.set(k, []);
+    map.get(k).push(n);
+  });
+  let units = [...map.values()];
+  if(units.length === 1 && units[0].length > 1) units = units[0].map(n => [n]);
+  return units.map(ms=>{
+    const x = Math.min(...ms.map(n => n.x)), y = Math.min(...ms.map(n => n.y));
+    return { ms, grouped: ms.length > 1, x, y,
+             w: Math.max(...ms.map(n => n.x + n.m.w)) - x, h: Math.max(...ms.map(n => n.y + n.m.h)) - y };
+  });
+}
 function alignSel(mode){
-  const bs = lastNodes.filter(n => selIds.has(n.it.id))
-    .map(n => ({ it:n.it, x:n.x, y:n.y, w:n.m.w, h:n.m.h }));
+  const us = alignTargets();
   const dist = mode === "hdist" || mode === "vdist";
-  if(!ALIGN_NAME[mode] || bs.length < (dist ? 3 : 2)) return;
-  const before = bs.map(b => [b.it, b.it.off ? {...b.it.off} : null]);
-  const move = (b, dx, dy) => {
-    const o = b.it.off || {x:0, y:0};
-    setOff(b.it, num(o.x,0) + dx, num(o.y,0) + dy);
-  };
+  if(!ALIGN_NAME[mode] || us.length < (dist ? 3 : 2)) return;
+  const all = us.flatMap(u => u.ms.map(n => n.it));
+  const before = all.map(it => [it, it.off ? {...it.off} : null]);
+  /* かたまりの中の人は、みんな同じだけ動かす（グループの中の並びは崩さない） */
+  const move = (u, dx, dy) => u.ms.forEach(n=>{
+    const o = n.it.off || {x:0, y:0};
+    setOff(n.it, num(o.x,0) + dx, num(o.y,0) + dy);
+  });
   if(mode === "top"){
-    const t = Math.min(...bs.map(b => b.y));
-    bs.forEach(b => move(b, 0, t - b.y));
+    const t = Math.min(...us.map(u => u.y));
+    us.forEach(u => move(u, 0, t - u.y));
   } else if(mode === "bottom"){
-    const t = Math.max(...bs.map(b => b.y + b.h));
-    bs.forEach(b => move(b, 0, t - (b.y + b.h)));
+    const t = Math.max(...us.map(u => u.y + u.h));
+    us.forEach(u => move(u, 0, t - (u.y + u.h)));
   } else if(mode === "middle"){
-    const t = (Math.min(...bs.map(b => b.y)) + Math.max(...bs.map(b => b.y + b.h))) / 2;
-    bs.forEach(b => move(b, 0, t - (b.y + b.h/2)));
+    const t = (Math.min(...us.map(u => u.y)) + Math.max(...us.map(u => u.y + u.h))) / 2;
+    us.forEach(u => move(u, 0, t - (u.y + u.h/2)));
+  } else if(mode === "left"){
+    const t = Math.min(...us.map(u => u.x));
+    us.forEach(u => move(u, t - u.x, 0));
+  } else if(mode === "right"){
+    const t = Math.max(...us.map(u => u.x + u.w));
+    us.forEach(u => move(u, t - (u.x + u.w), 0));
   } else {
-    /* 端の2人はそのままにして、全体どうしのすき間を同じにする */
+    /* 端の2つはそのままにして、全体どうしのすき間を同じにする */
     const hz = mode === "hdist";
-    const pos = b => hz ? b.x : b.y, size = b => hz ? b.w : b.h;
-    bs.sort((p, q) => (pos(p) + size(p)/2) - (pos(q) + size(q)/2));
-    const first = bs[0], last = bs[bs.length-1];
-    const gap = (pos(last) + size(last) - pos(first) - bs.reduce((a, b) => a + size(b), 0)) / (bs.length - 1);
+    const pos = u => hz ? u.x : u.y, size = u => hz ? u.w : u.h;
+    us.sort((p, q) => (pos(p) + size(p)/2) - (pos(q) + size(q)/2));
+    const first = us[0], last = us[us.length-1];
+    const gap = (pos(last) + size(last) - pos(first) - us.reduce((a, u) => a + size(u), 0)) / (us.length - 1);
     let at = pos(first);
-    bs.forEach(b => {
-      const d = at - pos(b);
-      if(hz) move(b, d, 0); else move(b, 0, d);
-      at += size(b) + gap;
+    us.forEach(u=>{
+      const d = at - pos(u);
+      if(hz) move(u, d, 0); else move(u, 0, d);
+      at += size(u) + gap;
     });
   }
-  render(); syncRows(bs.map(b => b.it)); save();
-  setStatus(`${bs.length}人を${ALIGN_NAME[mode]}にしました`, offUndo(before));
+  render(); syncRows(all); save();
+  setStatus(us.some(u => u.grouped) ? `グループごとに${ALIGN_NAME[mode]}にしました`
+                                    : `${us.length}人を${ALIGN_NAME[mode]}にしました`, offUndo(before));
+}
+/* ---- グループ ---- */
+/* 選んでいる中で、全員そろって選ばれているグループ */
+function selectedGroups(){
+  return new Set(selectedItems().filter(it => it.grp && unitOf(it).length > 1
+    && unitOf(it).every(id => selIds.has(id))).map(it => it.grp));
+}
+function grpRestore(keep){
+  return { label:"元に戻す", run(){
+    keep.forEach(([it, g]) => { it.grp = g; });
+    pruneGroups(); render(); state.items.forEach(refreshRow); save();
+  }};
+}
+function groupSel(){
+  const items = selectedItems();
+  if(items.length < 2) return;
+  const keep = state.items.map(it => [it, it.grp]);
+  const g = "g" + Math.random().toString(36).slice(2, 9);
+  items.forEach(it => { it.grp = g; });
+  pruneGroups();
+  render(); state.items.forEach(refreshRow); save();
+  setStatus(`${items.length}人をグループにしました`, grpRestore(keep));
+}
+function ungroupSel(){
+  const gs = selectedGroups();
+  if(!gs.size) return;
+  const keep = state.items.map(it => [it, it.grp]);
+  state.items.forEach(it => { if(gs.has(it.grp)) it.grp = null; });
+  render(); state.items.forEach(refreshRow); save();
+  setStatus(gs.size > 1 ? `グループを${gs.size}つ解除しました` : "グループを解除しました", grpRestore(keep));
 }
 function resetPos(it){
   if(!it) return;
@@ -1668,7 +1887,7 @@ function syncPos(el, it){
   iy.classList.toggle("moved", y !== 0);
   el.querySelector("[data-act=reset]").hidden = !it.off;
   /* ⌄ の右上の点：位置・大きさ・並べ方のどれかを、その人だけ変えている */
-  el.classList.toggle("tuned", !!it.off || it.scale != null || layOf(it) !== state.labelLayout);
+  el.classList.toggle("tuned", !!it.off || it.scale != null || layOf(it) !== state.labelLayout || zoomOf(it) !== 1);
 }
 
 /* 一覧の見出しの人数と、「動かした位置を全部戻す」 */
@@ -1686,13 +1905,25 @@ function updateListMeta(){
 function updateSelBar(){
   const items = selectedItems(), n = items.length;
   const touch = !!(window.matchMedia && matchMedia("(hover:none)").matches);
-  $("#selMsg").textContent = n > 1 ? `${n}人を選択中`
+  const groups = selectedGroups();
+  const oneGroup = groups.size === 1 && items.every(it => groups.has(it.grp));
+  const z = n === 1 ? zoomOf(items[0]) : 1;
+  $("#selMsg").textContent = oneGroup ? `グループ（${n}人）を選択中`
+    : n > 1 ? `${n}人を選択中` + (groups.size ? `（グループ${groups.size}つ）` : "")
     : n === 1 ? "選択中：" + (items[0].name || "（名前なし）")
+        + (z !== 1 ? `（大きさ ${Math.round(z*100)}%）` : (touch ? "" : "（四隅の□で大きさを変えられます）"))
     : multiMode ? "選びたい人を順にタップ（もう一度タップで外す）"
     : touch ? "タップで選択・ドラッグで移動。空いた所をなぞると複数選択"
     : "クリックで選択・ドラッグで移動。Shift+クリックや、空いた所をドラッグで複数選択";
+  /* そろえる・等間隔は「かたまり」の数で決める（グループは1つと数える） */
+  const units = n >= 2 ? alignTargets().length : 0;
   $("#selAlign").hidden = n < 2;
-  $("#selAlign").querySelectorAll('[data-al$="dist"]').forEach(b => { b.disabled = n < 3; });
+  $("#selAlign").querySelectorAll("button[data-al]").forEach(b=>{
+    b.disabled = units < (b.dataset.al.endsWith("dist") ? 3 : 2);
+  });
+  $("#selGroup").hidden = n < 2 || oneGroup;
+  $("#selUngroup").hidden = !groups.size;
+  $("#selZoomReset").hidden = !items.some(it => zoomOf(it) !== 1);
   $("#selLay").hidden = n < 1;
   const lays = new Set(items.map(layOf));
   $("#selLay").querySelectorAll("button[data-v]").forEach(b =>
@@ -1739,6 +1970,19 @@ $("#selMulti").addEventListener("click", ()=>{
   multiMode = !multiMode;
   updateSelBar();
 });
+$("#selGroup").addEventListener("click", groupSel);
+$("#selUngroup").addEventListener("click", ungroupSel);
+$("#selZoomReset").addEventListener("click", ()=>{
+  const items = selectedItems().filter(it => zoomOf(it) !== 1);
+  if(!items.length) return;
+  const keep = items.map(it => [it, it.zoom]);
+  items.forEach(it => setZoom(it, 1));
+  render(); items.forEach(refreshRow); save();
+  setStatus(items.length > 1 ? `${items.length}人の大きさを戻しました` : "大きさを戻しました", {
+    label:"元に戻す",
+    run(){ keep.forEach(([it, z]) => { it.zoom = z; }); render(); items.forEach(refreshRow); save(); }
+  });
+});
 
 /* PC：人物を選んだあと矢印キーで動かす（1px、Shiftで10px）。Escで選択を解除。
    Ctrl+A（Macは⌘+A）で画像に出ている全員を選ぶ */
@@ -1753,6 +1997,13 @@ document.addEventListener("keydown", e=>{
     e.preventDefault();
     replaceSel(vis.map(it => it.id), selectedId);
     render();
+    return;
+  }
+  /* Ctrl+G（Macは⌘+G）でグループにする、Shiftも押すとグループ解除 */
+  if((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === "g" || e.key === "G")){
+    if(!selIds.size) return;
+    e.preventDefault();
+    if(e.shiftKey) ungroupSel(); else groupSel();
     return;
   }
   const d = {ArrowUp:[0,-1], ArrowDown:[0,1], ArrowLeft:[-1,0], ArrowRight:[1,0]}[e.key];
@@ -2643,7 +2894,10 @@ function normalizeState(s){
       it.off = (x || y) ? {x, y} : null;
     }
     it.lay = (it.lay === "row" || it.lay === "stack") ? it.lay : null;
+    it.zoom = (Number.isFinite(it.zoom) && it.zoom > 0) ? clamp(Math.round(it.zoom*1000)/1000, ZOOM_MIN, ZOOM_MAX) : 1;
+    it.grp = (typeof it.grp === "string" && it.grp) ? it.grp : null;
   });
+  pruneGroups(out.items);
   return out;
 }
 
